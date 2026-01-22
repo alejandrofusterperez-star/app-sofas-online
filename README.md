@@ -1,20 +1,57 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# 🛋️ OkSofás AI Visualizer
 
-# Run and deploy your AI Studio app
+El **Visualizador Virtual de OkSofás** es una aplicación premium basada en IA diseñada para permitir a los clientes ver cómo quedarían los sofás del catálogo en sus propios hogares, o visualizar cambios de tapizado en tiempo real.
 
-This contains everything you need to run your app locally.
+---
 
-View your app in AI Studio: https://ai.studio/apps/drive/1agWqWq8j8bayPs7U11cku-IJB6PzsPgR
+## 🚀 Guía Rápida para Desarrolladores & Agentes IA
 
-## Run Locally
+Este proyecto ha sido optimizado para la **fidelidad del producto** y el **despliegue en Hostinger**.
 
-**Prerequisites:**  Node.js
+### 🛠️ Stack Tecnológico
+- **Frontend:** React + Vite + TypeScript.
+- **Estilos:** Tailwind CSS (Diseño Premium Dark/Modern).
+- **IA:** Google Gemini (`gemini-2.5-flash-image`).
+- **Despliegue:** Hostinger (Carpeta `dist/`).
 
+### 🧬 Lógica Crítica (Contexto para Agentes)
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+#### 1. Advanced Fidelity Engine (`services/geminiService.ts`)
+Para evitar que la IA "alucine" o invente formas, el sistema utiliza **Anclaje Geométrico**. Cualquier modificación en los prompts debe mantener estas reglas:
+- **Protección de Anatomía:** No se puede alterar el número de asientos, brazos o forma de las patas.
+- **REGLA DE ORO:** El mueble es el protagonista real, el entorno es el que se genera alrededor.
+
+#### 2. Branding Digency & OkSofás
+El branding está integrado de forma robusta:
+- **Assets:** Se utilizan URLs públicas (p. ej., logos de OkSofás y Digency) para evitar problemas de assets perdidos durante despliegues Git.
+- **Crédito:** El pie de página y el login deben mantener siempre la firma: *"Desarrollado con 🤍 por Digency"*.
+
+#### 3. Configuración de Despliegue
+Para Hostinger, es vital usar el archivo `.htaccess` proporcionado en los flujos de trabajo (`.agent/workflows/deploy-hostinger.md`) para manejar el routing de SPA y evitar errores 404 al recargar.
+
+---
+
+## 🏃 Ejecución Local
+
+1. **Instalar dependencias:**
+   ```bash
+   npm install
+   ```
+2. **Configurar Variable de Entorno:**
+   Crea o edita `.env.local` con:
+   ```env
+   API_KEY=tu_clave_de_gemini
+   ```
+3. **Iniciar Servidor Dev:**
+   ```bash
+   npm run dev
+   ```
+
+---
+
+## 🚢 Despliegue
+Consulta el workflow específico en:
+`[.agent/workflows/deploy-hostinger.md](.agent/workflows/deploy-hostinger.md)`
+
+---
+*Desarrollado con ❤️ para OkSofás por Alejandro y el equipo de Digency.*
