@@ -28,20 +28,30 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       </main>
       <footer className="bg-white border-t border-slate-100 py-10 mt-auto">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-4">
-            <img
-              src="https://oksofas.es/wp-content/uploads/2025/01/oksofas-logo-png.png.webp"
-              alt="OK Sofás"
-              className="h-6 opacity-80"
-            />
-            <span className="text-sm text-slate-400 font-medium">
-              &copy; {new Date().getFullYear()} OK Sofás. Tecnología AI Avanzada.
-            </span>
+          <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
+            <div className="flex items-center gap-4">
+              <img
+                src="https://oksofas.es/wp-content/uploads/2025/01/oksofas-logo-png.png.webp"
+                alt="OK Sofás"
+                className="h-6 opacity-80"
+              />
+              <span className="text-sm text-slate-400 font-medium">
+                &copy; {new Date().getFullYear()} OK Sofás.
+              </span>
+            </div>
+            <div className="h-4 w-px bg-slate-200 hidden md:block"></div>
+            <div className="flex items-center gap-2 bg-slate-900 px-4 py-2 rounded-full shadow-lg hover:scale-105 transition-transform cursor-pointer">
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/70">Desarrollado con 🤍 por</span>
+              <img 
+                src="https://digency.es/wp-content/uploads/2022/09/Logo_blanco.png.webp" 
+                alt="Digency" 
+                className="h-4 w-auto brightness-200" 
+              />
+            </div>
           </div>
           <div className="flex gap-6 text-xs font-bold text-slate-400 uppercase tracking-widest">
             <a href="#" className="hover:text-[#74AE2C] transition-colors">Aviso Legal</a>
             <a href="#" className="hover:text-[#74AE2C] transition-colors">Cookies</a>
-            <a href="#" className="hover:text-[#74AE2C] transition-colors">Atención al Cliente</a>
           </div>
         </div>
       </footer>
