@@ -14,29 +14,35 @@ export const processSofaImage = async (
 
   if (mode === AppMode.INTEGRATE) {
     prompt = `
-      Eres un diseñador de interiores de alta gama. 
-      Toma este sofá EXACTO de la imagen e intégralo perfectamente en un salón nuevo.
+      Eres un Fotógrafo Maestro de Catálogo de Muebles. 
+      TU OBJETIVO ÚNICO: Integrar el sofá de la imagen en un salón espectacular MANTENIENDO EL 100% DE FIDELIDAD ESTRUCTURAL.
       
-      REGLAS CRÍTICAS:
-      1. El sofá DEBE ser idéntico: misma forma, textura, costuras y color original. No lo cambies.
-      2. El estilo del salón debe ser ${config.style}.
-      3. Las paredes del salón deben ser de color ${config.wallColor}.
-      4. El suelo debe ser de ${config.flooring}.
-      5. La iluminación debe ser ${config.lighting}.
-      6. Añade elementos decorativos (plantas, mesas, cuadros) que encajen con el estilo ${config.style}.
-      7. El resultado debe parecer una fotografía de catálogo de muebles profesional.
-      8. **IMPORTANTE: LA IMAGEN DEBE TENER UNA RELACIÓN DE ASPECTO DE ${config.aspectRatio}. ESTO ES OBLIGATORIO.**
+      REGLAS DE PROTECCIÓN GEOMÉTRICA (CRÍTICO):
+      1. ANATOMÍA: Mantén el número exacto de asientos, respaldos y la forma exacta de los brazos. Prohibido añadir o quitar elementos.
+      2. DETALLES TÉCNICOS: Conserva las costuras, los botones (tufting) y el tipo de pata (material y altura) originales. No los "alucines".
+      3. PERSPECTIVA: El sofá debe mantener su ángulo y proporciones originales respecto a la cámara.
+      
+      CONFIGURACIÓN DEL AMBIENTE:
+      - Estilo: ${config.style}. Crea un entorno de alta gama que combine con el sofá.
+      - Paredes: Color ${config.wallColor}.
+      - Suelo: ${config.flooring}. Asegura sombras de contacto realistas bajo el sofá.
+      - Iluminación: ${config.lighting}. La luz debe incidir sobre el sofá de forma coherente con su relieve 3D original.
+      
+      CALIDAD FINAL: Fotografía de estudio profesional, iluminación balanceada, sin distorsiones en los bordes del mueble.
+      **REQUERIMIENTO TÉCNICO: RELACIÓN DE ASPECTO ${config.aspectRatio} OBLIGATORIA.**
     `.trim();
   } else {
     prompt = `
-      Eres un experto en retoque fotográfico de muebles.
-      Cambia el color de este sofá al color: ${config.targetSofaColor || 'Azul Marino'}.
+      Eres un Especialista en Renderizado de Textiles para Mobiliario Premium.
+      TU OBJETIVO: Cambiar el color del sofá preservando su ADN ESTRUCTURAL Y TEXTURA.
       
-      REGLAS CRÍTICAS:
-      1. Mantén la textura exacta de la tela, las sombras y la forma del sofá. Solo cambia el color.
-      2. El fondo debe ser un estudio fotográfico minimalista y neutro para que el sofá resalte.
-      3. Asegúrate de que el nuevo color se vea natural y premium, respetando los pliegues y el relieve.
-      4. **IMPORTANTE: LA IMAGEN DEBE TENER UNA RELACIÓN DE ASPECTO DE ${config.aspectRatio}. ESTO ES OBLIGATORIO.**
+      REGLAS DE RECOLOREADO FIDELIGNO:
+      1. INTEGRIDAD DE TEXTURA: Mantén la trama de la tela, los pliegues naturales y las sombras originales. Solo cambia el tinte cromático.
+      2. PROTECCIÓN DE DETALLES: No cambies el color de las patas ni de los accesorios si los tiene.
+      3. COLOR OBJETIVO: ${config.targetSofaColor || 'Azul Marino'}. El tono debe ser uniforme y premium.
+      
+      ENTORNO: Presentación de catálogo en estudio neutro minimalista para que el diseño del sofá sea el protagonista absoluto.
+      **REQUERIMIENTO TÉCNICO: RELACIÓN DE ASPECTO ${config.aspectRatio} OBLIGATORIA.**
     `.trim();
   }
 
