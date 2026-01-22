@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { InteriorStyle, Lighting, VisualizationConfig, AppMode, AspectRatio } from '../types';
+import { InteriorStyle, Lighting, VisualizationConfig, AppMode } from '../types';
 
 interface StyleSelectorProps {
   config: VisualizationConfig;
@@ -11,8 +11,8 @@ interface StyleSelectorProps {
 
 const styles = Object.values(InteriorStyle);
 const lightingOptions = Object.values(Lighting);
-const aspectRatios = Object.values(AspectRatio);
 
+// ... (wallColors and sofaColors omitted for brevity in search but kept in file)
 const wallColors = [
   { name: 'Blanco Lino', value: '#F9F9F7' },
   { name: 'Greige Pinterest', value: '#B0ADA3' },
@@ -46,31 +46,6 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
     </label>
   );
 
-  const aspectRatioSelector = (
-    <div className="mt-8 pt-8 border-t border-slate-50">
-      {commonHeader('Formato de imagen')}
-      <div className="grid grid-cols-3 gap-3">
-        {aspectRatios.map((ratio) => (
-          <button
-            key={ratio}
-            onClick={() => onChange({ ...config, aspectRatio: ratio as AspectRatio })}
-            disabled={disabled}
-            className={`flex flex-col items-center gap-2 py-3 px-2 rounded-2xl border transition-all ${config.aspectRatio === ratio
-              ? 'bg-[#74AE2C]/5 border-[#74AE2C] text-[#74AE2C] shadow-sm'
-              : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'
-              }`}
-          >
-            {/* Simple icon for ratio */}
-            <div className={`border-2 rounded transition-colors ${config.aspectRatio === ratio ? 'border-[#74AE2C]' : 'border-slate-300'
-              } ${ratio === AspectRatio.SQUARE ? 'w-5 h-5' :
-                ratio === AspectRatio.LANDSCAPE ? 'w-7 h-4' : 'w-4 h-7'
-              }`} />
-            <span className="text-[10px] font-black uppercase tracking-widest">{ratio}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
 
   if (mode === AppMode.COLOR_CHANGE) {
     return (
@@ -101,7 +76,6 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
             ))}
           </div>
         </div>
-        {aspectRatioSelector}
       </div>
     );
   }
@@ -160,7 +134,7 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
         </select>
       </div>
 
-      {aspectRatioSelector}
+      {/* No aspect ratio selector */}
     </div>
   );
 };

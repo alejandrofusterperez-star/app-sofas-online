@@ -29,7 +29,6 @@ export const processSofaImage = async (
       - Iluminación: ${config.lighting}. La luz debe incidir sobre el sofá de forma coherente con su relieve 3D original.
       
       CALIDAD FINAL: Fotografía de estudio profesional, iluminación balanceada, sin distorsiones en los bordes del mueble.
-      **REQUERIMIENTO TÉCNICO: RELACIÓN DE ASPECTO ${config.aspectRatio} OBLIGATORIA.**
     `.trim();
   } else {
     prompt = `
@@ -42,7 +41,6 @@ export const processSofaImage = async (
       3. COLOR OBJETIVO: ${config.targetSofaColor || 'Azul Marino'}. El tono debe ser uniforme y premium.
       
       ENTORNO: Presentación de catálogo en estudio neutro minimalista para que el diseño del sofá sea el protagonista absoluto.
-      **REQUERIMIENTO TÉCNICO: RELACIÓN DE ASPECTO ${config.aspectRatio} OBLIGATORIA.**
     `.trim();
   }
 
@@ -62,7 +60,6 @@ export const processSofaImage = async (
       },
       // @ts-ignore - Parámetro específico para modelos de generación de imagen
       generationConfig: {
-        aspectRatio: config.aspectRatio
       }
     });
 

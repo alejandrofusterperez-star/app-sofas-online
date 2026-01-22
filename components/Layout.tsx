@@ -42,10 +42,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             <div className="h-4 w-px bg-slate-200 hidden md:block"></div>
             <div className="flex items-center gap-2 bg-slate-900 px-4 py-2 rounded-full shadow-lg hover:scale-105 transition-transform cursor-pointer">
               <span className="text-[10px] font-black uppercase tracking-widest text-white/70">Desarrollado con 🤍 por</span>
-              <img 
-                src="https://digency.es/wp-content/uploads/2022/09/Logo_blanco.png.webp" 
-                alt="Digency" 
-                className="h-4 w-auto brightness-200" 
+              <img
+                src="https://digency.es/wp-content/uploads/2022/09/Logo_blanco.png.webp"
+                alt="Digency"
+                className="h-4 w-auto brightness-200"
               />
             </div>
           </div>

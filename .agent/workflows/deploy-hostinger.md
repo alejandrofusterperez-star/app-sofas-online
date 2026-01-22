@@ -45,4 +45,4 @@ Si al recargar la página te da un error 404, crea un archivo llamado `.htaccess
 ```
 
 ### 5. Verificar el Logo y Assets
-Asegúrate de que la carpeta `public/assets/` se haya subido correctamente para que el logo y los fondos dinámicos del login funcionen.
+¡Buenas noticias! He sustituido el logo y los fondos locales por **URLs públicas robustas**. Esto significa que ya no dependes de subir manualmente la carpeta `public/assets/` para que la interfaz se vea premium. Todo cargará automáticamente desde la web.

@@ -53,7 +53,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         <div className="min-h-screen w-full flex overflow-hidden font-sans bg-white">
             {/* Lado Izquierdo: Branding, Frases y Fondo Dinámico */}
             <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center p-20 overflow-hidden">
-                {/* Imágenes de fondo con transición */}
+                {/* Imágenes de fondo con transition */}
                 <div className="absolute inset-0 z-0">
                     <img
                         src={currentBg}
@@ -98,7 +98,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
             {/* Lado Derecho: Formulario de Login */}
             <div className="w-full lg:w-1/2 bg-[#F8FAF5] flex items-center justify-center p-8 lg:p-24 relative">
-                <div className="w-full max-md animate-in fade-in slide-in-from-right-12 duration-1000">
+                <div className="w-full max-w-md animate-in fade-in slide-in-from-right-12 duration-1000">
                     <div className="lg:hidden mb-12">
                         <img
                             src="https://oksofas.es/wp-content/uploads/2025/01/oksofas-logo-png.png.webp"
@@ -153,13 +153,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
                     <div className="mt-12 pt-8 border-t border-slate-100 flex flex-col items-center gap-4">
                         <p className="text-center text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
-                             Desarrollado con <span className="text-slate-300">🤍</span> por
+                            Desarrollado con <span className="text-slate-300">🤍</span> por
                         </p>
                         <div className="bg-slate-900/90 backdrop-blur-sm px-6 py-4 rounded-2xl shadow-xl hover:bg-slate-900 transition-all border border-slate-800 flex items-center justify-center">
-                            <img 
-                                src="https://digency.es/wp-content/uploads/2022/09/Logo_blanco.png.webp" 
-                                alt="Digency" 
-                                className="h-5 w-auto" 
+                            <img
+                                src="https://digency.es/wp-content/uploads/2022/09/Logo_blanco.png.webp"
+                                alt="Digency"
+                                className="h-5 w-auto"
                             />
                         </div>
                     </div>

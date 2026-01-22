@@ -20,19 +20,12 @@ export enum AppMode {
   COLOR_CHANGE = 'COLOR_CHANGE'
 }
 
-export enum AspectRatio {
-  SQUARE = '1:1',
-  LANDSCAPE = '16:9',
-  PORTRAIT = '9:16'
-}
-
 export interface VisualizationConfig {
   style: InteriorStyle;
   wallColor: string;
   lighting: Lighting;
   flooring: string;
   targetSofaColor?: string;
-  aspectRatio: AspectRatio;
 }
 
 export interface GenerationResult {

@@ -2,7 +2,7 @@
 import React, { useState, useRef } from 'react';
 import { Layout } from './components/Layout';
 import { StyleSelector } from './components/StyleSelector';
-import { InteriorStyle, Lighting, VisualizationConfig, GenerationResult, AppMode, AspectRatio } from './types';
+import { InteriorStyle, Lighting, VisualizationConfig, GenerationResult, AppMode } from './types';
 import { processSofaImage } from './services/geminiService';
 import { Login } from './components/Login';
 import { ResultCard } from './components/ResultCard';
@@ -14,11 +14,10 @@ const App: React.FC = () => {
   const [mimeType, setMimeType] = useState<string>('');
   const [config, setConfig] = useState<VisualizationConfig>({
     style: InteriorStyle.MINIMALIST,
-    wallColor: 'Blanco Cálido',
+    wallColor: '#ffffff',
     lighting: Lighting.NATURAL,
     flooring: 'Roble Claro',
-    targetSofaColor: 'Verde OK',
-    aspectRatio: AspectRatio.SQUARE
+    targetSofaColor: 'Verde OK'
   });
   const [results, setResults] = useState<GenerationResult[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
