@@ -11,9 +11,9 @@ const PHRASES = [
 ];
 
 const BACKGROUNDS = [
-    "/assets/login/bg1.jpg",
-    "/assets/login/bg2.jpg",
-    "/assets/login/bg3.jpg"
+    "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1200&q=80",
+    "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1200&q=80",
+    "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1200&q=80"
 ];
 
 interface LoginProps {
@@ -72,7 +72,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
                 <div className="relative z-20 text-white max-w-lg">
                     <img
-                        src="/assets/logo.png"
+                        src="https://oksofas.es/wp-content/uploads/2025/01/oksofas-logo-png.png.webp"
                         alt="OK Sofás"
                         className="h-14 mb-12 drop-shadow-xl"
                     />
@@ -101,7 +101,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <div className="w-full max-w-md animate-in fade-in slide-in-from-right-12 duration-1000">
                     <div className="lg:hidden mb-12">
                         <img
-                            src="/assets/logo.png"
+                            src="https://oksofas.es/wp-content/uploads/2025/01/oksofas-logo-png.png.webp"
                             alt="OK Sofás"
                             className="h-12"
                         />

@@ -8,7 +8,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <img
-              src="/assets/logo.png"
+              src="https://oksofas.es/wp-content/uploads/2025/01/oksofas-logo-png.png.webp"
               alt="OK Sofás Logo"
               className="h-10 w-auto object-contain"
             />
@@ -30,7 +30,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-4">
             <img
-              src="/assets/logo.png"
+              src="https://oksofas.es/wp-content/uploads/2025/01/oksofas-logo-png.png.webp"
               alt="OK Sofás"
               className="h-6 opacity-80"
             />
