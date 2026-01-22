@@ -55,14 +55,14 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
             key={ratio}
             onClick={() => onChange({ ...config, aspectRatio: ratio as AspectRatio })}
             disabled={disabled}
-            className={`flex flex-col items-center gap-2 py-3 px-2 rounded-2xl border transition-all \${config.aspectRatio === ratio
+            className={`flex flex-col items-center gap-2 py-3 px-2 rounded-2xl border transition-all ${config.aspectRatio === ratio
               ? 'bg-[#74AE2C]/5 border-[#74AE2C] text-[#74AE2C] shadow-sm'
               : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'
               }`}
           >
             {/* Simple icon for ratio */}
-            <div className={`border-2 rounded transition-colors \${config.aspectRatio === ratio ? 'border-[#74AE2C]' : 'border-slate-300'
-              } \${ratio === AspectRatio.SQUARE ? 'w-5 h-5' :
+            <div className={`border-2 rounded transition-colors ${config.aspectRatio === ratio ? 'border-[#74AE2C]' : 'border-slate-300'
+              } ${ratio === AspectRatio.SQUARE ? 'w-5 h-5' :
                 ratio === AspectRatio.LANDSCAPE ? 'w-7 h-4' : 'w-4 h-7'
               }`} />
             <span className="text-[10px] font-black uppercase tracking-widest">{ratio}</span>
@@ -87,13 +87,13 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
                 className="flex flex-col items-center gap-2 group outline-none"
               >
                 <div
-                  className={`w-full aspect-square rounded-2xl border-2 transition-all duration-300 \${config.targetSofaColor === color.name
+                  className={`w-full aspect-square rounded-2xl border-2 transition-all duration-300 ${config.targetSofaColor === color.name
                     ? 'border-[#74AE2C] ring-4 ring-[#74AE2C]/10 scale-105'
                     : 'border-slate-100 group-hover:border-slate-300'
                     }`}
                   style={{ backgroundColor: color.value }}
                 />
-                <span className={`text-[10px] font-bold text-center leading-tight transition-colors \${config.targetSofaColor === color.name ? 'text-[#74AE2C]' : 'text-slate-400'
+                <span className={`text-[10px] font-bold text-center leading-tight transition-colors ${config.targetSofaColor === color.name ? 'text-[#74AE2C]' : 'text-slate-400'
                   }`}>
                   {color.name}
                 </span>
@@ -116,7 +116,7 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
               key={style}
               onClick={() => onChange({ ...config, style })}
               disabled={disabled}
-              className={`px-3 py-2.5 text-xs font-bold rounded-xl border transition-all \${config.style === style
+              className={`px-3 py-2.5 text-xs font-bold rounded-xl border transition-all ${config.style === style
                 ? 'bg-[#74AE2C] border-[#74AE2C] text-white shadow-lg shadow-[#74AE2C]/20'
                 : 'bg-white border-slate-100 text-slate-500 hover:border-[#74AE2C]/30'
                 }`}
@@ -136,7 +136,7 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
               title={color.name}
               onClick={() => onChange({ ...config, wallColor: color.name })}
               disabled={disabled}
-              className={`w-9 h-9 rounded-full border-2 transition-all \${config.wallColor === color.name ? 'scale-110 border-[#74AE2C] ring-4 ring-[#74AE2C]/10 shadow-md' : 'border-white shadow-sm hover:border-slate-200'
+              className={`w-9 h-9 rounded-full border-2 transition-all ${config.wallColor === color.name ? 'scale-110 border-[#74AE2C] ring-4 ring-[#74AE2C]/10 shadow-md' : 'border-white shadow-sm hover:border-slate-200'
                 }`}
               style={{ backgroundColor: color.value }}
             />

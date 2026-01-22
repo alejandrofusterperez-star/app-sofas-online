@@ -19,24 +19,24 @@ export const processSofaImage = async (
       
       REGLAS CRÍTICAS:
       1. El sofá DEBE ser idéntico: misma forma, textura, costuras y color original. No lo cambies.
-      2. El estilo del salón debe ser \${config.style}.
-      3. Las paredes del salón deben ser de color \${config.wallColor}.
-      4. El suelo debe ser de \${config.flooring}.
-      5. La iluminación debe ser \${config.lighting}.
-      6. Añade elementos decorativos (plantas, mesas, cuadros) que encajen con el estilo \${config.style}.
+      2. El estilo del salón debe ser ${config.style}.
+      3. Las paredes del salón deben ser de color ${config.wallColor}.
+      4. El suelo debe ser de ${config.flooring}.
+      5. La iluminación debe ser ${config.lighting}.
+      6. Añade elementos decorativos (plantas, mesas, cuadros) que encajen con el estilo ${config.style}.
       7. El resultado debe parecer una fotografía de catálogo de muebles profesional.
-      8. **IMPORTANTE: LA IMAGEN DEBE TENER UNA RELACIÓN DE ASPECTO DE \${config.aspectRatio}. ESTO ES OBLIGATORIO.**
+      8. **IMPORTANTE: LA IMAGEN DEBE TENER UNA RELACIÓN DE ASPECTO DE ${config.aspectRatio}. ESTO ES OBLIGATORIO.**
     `.trim();
   } else {
     prompt = `
       Eres un experto en retoque fotográfico de muebles.
-      Cambia el color de este sofá al color: \${config.targetSofaColor || 'Azul Marino'}.
+      Cambia el color de este sofá al color: ${config.targetSofaColor || 'Azul Marino'}.
       
       REGLAS CRÍTICAS:
       1. Mantén la textura exacta de la tela, las sombras y la forma del sofá. Solo cambia el color.
       2. El fondo debe ser un estudio fotográfico minimalista y neutro para que el sofá resalte.
       3. Asegúrate de que el nuevo color se vea natural y premium, respetando los pliegues y el relieve.
-      4. **IMPORTANTE: LA IMAGEN DEBE TENER UNA RELACIÓN DE ASPECTO DE \${config.aspectRatio}. ESTO ES OBLIGATORIO.**
+      4. **IMPORTANTE: LA IMAGEN DEBE TENER UNA RELACIÓN DE ASPECTO DE ${config.aspectRatio}. ESTO ES OBLIGATORIO.**
     `.trim();
   }
 
@@ -62,7 +62,7 @@ export const processSofaImage = async (
 
     for (const part of response.candidates?.[0]?.content?.parts || []) {
       if (part.inlineData) {
-        return \`data:image/png;base64,\${part.inlineData.data}\`;
+        return `data:image/png;base64,${part.inlineData.data}`;
       }
     }
 

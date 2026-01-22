@@ -58,7 +58,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     <img
                         src={currentBg}
                         alt="Background"
-                        className={`w-full h-full object-cover transition-all duration-1000 \${fade ? 'opacity-100' : 'opacity-0'}`}
+                        className={`w-full h-full object-cover transition-all duration-1000 ${fade ? 'opacity-100' : 'opacity-0'}`}
                     />
                     {/* Overlay para legibilidad y atmósfera */}
                     <div className="absolute inset-0 bg-black/30 backdrop-blur-[0.5px]"></div>
@@ -77,7 +77,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                         className="h-14 mb-12 drop-shadow-xl"
                     />
                     <div className="h-44">
-                        <h2 className={`text-5xl font-black mb-8 transition-all duration-700 uppercase tracking-tighter leading-tight drop-shadow-2xl \${fade ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                        <h2 className={`text-5xl font-black mb-8 transition-all duration-700 uppercase tracking-tighter leading-tight drop-shadow-2xl ${fade ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                             {PHRASES[index]}
                         </h2>
                     </div>
@@ -89,7 +89,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                         {BACKGROUNDS.map((_, i) => (
                             <div
                                 key={i}
-                                className={`h-1.5 transition-all duration-500 rounded-full \${i === (index % BACKGROUNDS.length) ? 'w-10 bg-[#74AE2C]' : 'w-4 bg-white/20'}`}
+                                className={`h-1.5 transition-all duration-500 rounded-full ${i === (index % BACKGROUNDS.length) ? 'w-10 bg-[#74AE2C]' : 'w-4 bg-white/20'}`}
                             ></div>
                         ))}
                     </div>

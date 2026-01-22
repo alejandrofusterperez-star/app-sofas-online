@@ -12,19 +12,19 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result, idx }) => {
 
     return (
         <div
-            className={`group relative rounded-[2.5rem] overflow-hidden border border-slate-100 shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:shadow-[#74AE2C]/10 bg-white \${idx === 0 ? 'md:col-span-2' : ''
+            className={`group relative rounded-[2.5rem] overflow-hidden border border-slate-100 shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:shadow-[#74AE2C]/10 bg-white ${idx === 0 ? 'md:col-span-2' : ''
                 }`}
         >
             <div className="relative aspect-auto">
                 <img
                     src={showOriginal ? result.originalUrl : result.url}
-                    alt={`OK Sofás AI - \${idx + 1}`}
-                    className={`w-full h-auto rounded-[2.5rem] transition-all duration-300 \${showOriginal ? 'brightness-90 scale-[1.01]' : 'opacity-100'}`}
+                    alt={`OK Sofás AI - ${idx + 1}`}
+                    className={`w-full h-auto rounded-[2.5rem] transition-all duration-300 ${showOriginal ? 'brightness-90 scale-[1.01]' : 'opacity-100'}`}
                 />
 
                 {/* Label Antes/Después */}
                 <div className="absolute top-6 left-6 z-30">
-                    <span className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg backdrop-blur-md transition-all \${showOriginal ? 'bg-orange-500 text-white' : 'bg-white/90 text-slate-800'
+                    <span className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg backdrop-blur-md transition-all ${showOriginal ? 'bg-orange-500 text-white' : 'bg-white/90 text-slate-800'
                         }`}>
                         {showOriginal ? 'Original' : 'Resultado AI'}
                     </span>
@@ -50,7 +50,7 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result, idx }) => {
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-end p-10">
                 <div className="flex justify-between items-center w-full transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
                     <div className="text-white">
-                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#74AE2C]">Inspiración \${idx + 1}</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#74AE2C]">Inspiración ${idx + 1}</p>
                         <h4 className="text-xl font-black uppercase tracking-tight">{result.mode === AppMode.INTEGRATE ? result.style || 'AI Design' : 'Estudio Color'}</h4>
                     </div>
                     <button
@@ -62,7 +62,7 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result, idx }) => {
 
                                 const link = document.createElement('a');
                                 link.href = blobUrl;
-                                link.download = `ok-sofas-vision-\${idx + 1}.png`;
+                                link.download = `ok-sofas-vision-${idx + 1}.png`;
                                 document.body.appendChild(link);
                                 link.click();
                                 document.body.removeChild(link);
@@ -72,7 +72,7 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result, idx }) => {
                                 console.error("Error al descargar la imagen:", err);
                                 const link = document.createElement('a');
                                 link.href = result.url;
-                                link.download = `ok-sofas-vision-\${idx + 1}.png`;
+                                link.download = `ok-sofas-vision-${idx + 1}.png`;
                                 link.click();
                             }
                         }}
