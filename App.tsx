@@ -62,11 +62,11 @@ const App: React.FC = () => {
       const responses = await Promise.all(promises);
 
       const validResults: GenerationResult[] = responses
-        .filter((url): url is string => url !== null)
-        .map((url, idx) => ({
+        .filter((res): res is { generatedUrl: string, processedInputUrl: string } => res !== null)
+        .map((res, idx) => ({
           id: `res-${idx}-${Date.now()}`,
-          url,
-          originalUrl: baseImage!,
+          url: res.generatedUrl,
+          originalUrl: res.processedInputUrl, // Use the PADDED/PROCESSED input image
           style: config.style,
           mode
         }));
@@ -100,6 +100,12 @@ const App: React.FC = () => {
                   INTEGRAR SOFÁ
                 </button>
                 <button
+                  onClick={() => { setMode(AppMode.MATTRESS); setResults([]); }}
+                  className={`flex-1 py-3 text-xs font-extrabold rounded-xl transition-all duration-300 ${mode === AppMode.MATTRESS ? 'bg-white shadow-md text-[#74AE2C]' : 'text-slate-400 hover:text-slate-600'}`}
+                >
+                  INTEGRAR COLCHÓN
+                </button>
+                <button
                   onClick={() => { setMode(AppMode.COLOR_CHANGE); setResults([]); }}
                   className={`flex-1 py-3 text-xs font-extrabold rounded-xl transition-all duration-300 ${mode === AppMode.COLOR_CHANGE ? 'bg-white shadow-md text-[#74AE2C]' : 'text-slate-400 hover:text-slate-600'}`}
                 >
@@ -110,7 +116,7 @@ const App: React.FC = () => {
               <div className="mb-8">
                 <label className="block text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
                   <div className="w-1.5 h-1.5 bg-[#74AE2C] rounded-full"></div>
-                  Tu sofá actual
+                  {mode === AppMode.MATTRESS ? 'Tu colchón actual' : 'Tu sofá actual'}
                 </label>
                 <div
                   onClick={() => fileInputRef.current?.click()}
@@ -119,7 +125,7 @@ const App: React.FC = () => {
                 >
                   {baseImage ? (
                     <div className="relative w-full">
-                      <img src={baseImage} alt="Sofá" className="w-full aspect-video object-cover rounded-2xl shadow-sm" />
+                      <img src={baseImage} alt="Mueble" className="w-full aspect-video object-cover rounded-2xl shadow-sm" />
                       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-2xl transition-opacity">
                         <span className="bg-white/90 text-[#74AE2C] px-4 py-2 rounded-full text-xs font-bold shadow-lg">Cambiar Foto</span>
                       </div>
@@ -133,7 +139,9 @@ const App: React.FC = () => {
                       </div>
                       <div className="text-center">
                         <p className="text-sm font-bold text-slate-700 uppercase tracking-tight">Subir Imagen</p>
-                        <p className="text-xs text-slate-400 mt-1">Sube una foto clara de tu sofá</p>
+                        <p className="text-xs text-slate-400 mt-1">
+                          {mode === AppMode.MATTRESS ? 'Sube una foto clara de tu colchón' : 'Sube una foto clara de tu sofá'}
+                        </p>
                       </div>
                     </>
                   )}
@@ -157,7 +165,8 @@ const App: React.FC = () => {
                     Estamos diseñando...
                   </div>
                 ) : (
-                  mode === AppMode.INTEGRATE ? 'Visualizar en mi salón' : 'Ver con nuevo tapizado'
+                  mode === AppMode.INTEGRATE ? 'Visualizar en mi salón' :
+                    mode === AppMode.MATTRESS ? 'Visualizar en mi habitación' : 'Ver con nuevo tapizado'
                 )}
               </button>
 
@@ -183,7 +192,7 @@ const App: React.FC = () => {
                 </div>
                 <h3 className="text-3xl font-black text-slate-800 mb-4 tracking-tight uppercase">Tu hogar, a tu medida</h3>
                 <p className="text-slate-400 max-w-md leading-relaxed font-medium">
-                  Usa nuestra Inteligencia Artificial para ver cómo quedaría cualquiera de nuestros sofás en el salón de tus sueños.
+                  Usa nuestra Inteligencia Artificial para ver cómo quedaría cualquiera de nuestros {mode === AppMode.MATTRESS ? 'colchones' : 'sofás'} en el {mode === AppMode.MATTRESS ? 'dormitorio' : 'salón'} de tus sueños.
                 </p>
                 <div className="mt-12 grid grid-cols-3 gap-6">
                   <div className="flex flex-col items-center gap-2">
@@ -215,7 +224,7 @@ const App: React.FC = () => {
                   <div className="space-y-4">
                     <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Creando magia...</h3>
                     <p className="text-slate-400 font-medium italic leading-relaxed">
-                      "Estamos combinando materiales reales y texturas premium para que tu salón sea perfecto"
+                      "Estamos combinando materiales reales y texturas premium para que tu {mode === AppMode.MATTRESS ? 'dormitorio' : 'salón'} sea perfecto"
                     </p>
                   </div>
                 </div>

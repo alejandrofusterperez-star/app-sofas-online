@@ -76,6 +76,30 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
             ))}
           </div>
         </div>
+
+        <div className="mt-6 border-t border-slate-100 pt-6">
+          {commonHeader('Formato de imagen')}
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => onChange({ ...config, aspectRatio: '1:1' })}
+              className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 transition-all ${config.aspectRatio !== '3:4'
+                ? 'border-[#74AE2C] bg-[#74AE2C]/5 text-[#74AE2C]'
+                : 'border-slate-100 bg-white text-slate-400 hover:border-slate-200'}`}
+            >
+              <div className="w-4 h-4 border-2 border-current rounded-sm"></div>
+              <span className="text-xs font-bold">Cuadrado (1:1)</span>
+            </button>
+            <button
+              onClick={() => onChange({ ...config, aspectRatio: '3:4' })}
+              className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 transition-all ${config.aspectRatio === '3:4'
+                ? 'border-[#74AE2C] bg-[#74AE2C]/5 text-[#74AE2C]'
+                : 'border-slate-100 bg-white text-slate-400 hover:border-slate-200'}`}
+            >
+              <div className="w-3 h-4 border-2 border-current rounded-sm"></div>
+              <span className="text-xs font-bold">Vertical (A4)</span>
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -134,7 +158,64 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
         </select>
       </div>
 
-      {/* No aspect ratio selector */}
+      {/* Pillow toggle for Mattress mode */}
+      {mode === AppMode.MATTRESS && (
+        <div>
+          {commonHeader('Personalización')}
+          <div
+            onClick={() => onChange({ ...config, addPillows: !config.addPillows })}
+            className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all cursor-pointer group ${config.addPillows
+              ? 'border-[#74AE2C] bg-[#74AE2C]/5'
+              : 'border-slate-100 bg-white hover:border-slate-200'
+              }`}
+          >
+            <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-colors ${config.addPillows
+              ? 'bg-[#74AE2C] border-[#74AE2C]'
+              : 'border-slate-300 bg-white group-hover:border-[#74AE2C]'
+              }`}>
+              {config.addPillows && (
+                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </div>
+            <div>
+              <span className={`block text-sm font-bold ${config.addPillows ? 'text-[#74AE2C]' : 'text-slate-600'}`}>
+                Añadir Almohadas
+              </span>
+              <span className="text-xs text-slate-400">
+                Coloca 2 almohadas premium en la cabecera
+              </span>
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      <div className="mt-6 border-t border-slate-100 pt-6">
+        {commonHeader('Formato de imagen')}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => onChange({ ...config, aspectRatio: '1:1' })}
+            className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 transition-all ${config.aspectRatio !== '3:4'
+              ? 'border-[#74AE2C] bg-[#74AE2C]/5 text-[#74AE2C]'
+              : 'border-slate-100 bg-white text-slate-400 hover:border-slate-200'}`}
+          >
+            <div className="w-4 h-4 border-2 border-current rounded-sm"></div>
+            <span className="text-xs font-bold">Cuadrado (1:1)</span>
+          </button>
+          <button
+            onClick={() => onChange({ ...config, aspectRatio: '3:4' })}
+            className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 transition-all ${config.aspectRatio === '3:4'
+              ? 'border-[#74AE2C] bg-[#74AE2C]/5 text-[#74AE2C]'
+              : 'border-slate-100 bg-white text-slate-400 hover:border-slate-200'}`}
+          >
+            <div className="w-3 h-4 border-2 border-current rounded-sm"></div>
+            <span className="text-xs font-bold">Vertical (A4)</span>
+          </button>
+        </div>
+      </div>
+
     </div>
   );
 };

@@ -17,7 +17,8 @@ export enum Lighting {
 
 export enum AppMode {
   INTEGRATE = 'INTEGRATE',
-  COLOR_CHANGE = 'COLOR_CHANGE'
+  COLOR_CHANGE = 'COLOR_CHANGE',
+  MATTRESS = 'MATTRESS'
 }
 
 export interface VisualizationConfig {
@@ -26,6 +27,8 @@ export interface VisualizationConfig {
   lighting: Lighting;
   flooring: string;
   targetSofaColor?: string;
+  addPillows?: boolean;
+  aspectRatio?: string;
 }
 
 export interface GenerationResult {
