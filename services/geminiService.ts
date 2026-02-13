@@ -157,8 +157,11 @@ export const processSofaImage = async (
   }
 
   try {
+    const modelName = 'gemini-2.0-flash';
+    console.log(`Llamando a Gemini con modelo: ${modelName}`);
+
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
+      model: modelName,
       contents: {
         parts: [
           {
@@ -184,9 +187,13 @@ export const processSofaImage = async (
       }
     }
 
+    console.warn("Gemini no devolvió ninguna imagen en la respuesta:", response);
     return null;
-  } catch (error) {
-    console.error("Error en Gemini:", error);
+  } catch (error: any) {
+    console.error("Error detallado en Gemini:", error);
+    // Log detailed error information to help debug in Hostinger console
+    if (error.status) console.error("Status Code:", error.status);
+    if (error.message) console.error("Error Message:", error.message);
     throw error;
   }
 };

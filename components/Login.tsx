@@ -40,7 +40,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (username === 'alejandro' && password === 'Sofas123.') {
+        const isValidAlejandro = username === 'alejandro' && password === 'Sofas123.';
+        const isValidOficina = username === 'oficina' && password === 'Sofas123.';
+
+        if (isValidAlejandro || isValidOficina) {
             onLogin();
         } else {
             setError('Credenciales incorrectas. Inténtalo de nuevo.');
