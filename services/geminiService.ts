@@ -8,7 +8,13 @@ export const processSofaImage = async (
   config: VisualizationConfig,
   mode: AppMode
 ): Promise<{ generatedUrl: string, processedInputUrl: string } | null> => {
-  const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY || '' });
+  const apiKey = import.meta.env.VITE_API_KEY || '';
+  if (!apiKey) {
+    console.error("VITE_API_KEY no encontrada en las variables de entorno.");
+  } else {
+    console.log("API Key detectada (comienza por:", apiKey.substring(0, 5), "...)");
+  }
+  const ai = new GoogleGenAI({ apiKey });
 
   let prompt = '';
 
@@ -157,7 +163,7 @@ export const processSofaImage = async (
   }
 
   try {
-    const modelName = 'gemini-2.0-flash';
+    const modelName = 'gemini-2.5-flash-image';
     console.log(`Llamando a Gemini con modelo: ${modelName}`);
 
     const response: GenerateContentResponse = await ai.models.generateContent({
