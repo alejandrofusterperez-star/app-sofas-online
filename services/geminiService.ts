@@ -8,11 +8,11 @@ export const processSofaImage = async (
   config: VisualizationConfig,
   mode: AppMode
 ): Promise<{ generatedUrl: string, processedInputUrl: string } | null> => {
-  const apiKey = import.meta.env.VITE_API_KEY || '';
-  if (!apiKey) {
-    console.error("VITE_API_KEY no encontrada en las variables de entorno.");
+  const apiKey = import.meta.env.VITE_API_KEY || 'AIzaSyAFGzsJ4p-LQJ-HhDUzl-xepHyT4XcLOPs';
+  if (!import.meta.env.VITE_API_KEY) {
+    console.warn("VITE_API_KEY no encontrada en las variables de entorno. Usando fallback.");
   } else {
-    console.log("API Key detectada (comienza por:", apiKey.substring(0, 5), "...)");
+    console.log("API Key detectada desde entorno (comienza por:", apiKey.substring(0, 5), "...)");
   }
   const ai = new GoogleGenAI({ apiKey });
 
