@@ -1,6 +1,7 @@
 
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { VisualizationConfig, AppMode } from "../types";
+
+const OPENAI_IMAGE_EDIT_URL = "https://api.openai.com/v1/images/edits";
 
 export const processSofaImage = async (
   base64Image: string,
@@ -8,17 +9,16 @@ export const processSofaImage = async (
   config: VisualizationConfig,
   mode: AppMode
 ): Promise<{ generatedUrl: string, processedInputUrl: string } | null> => {
-  const apiKey = import.meta.env.VITE_API_KEY || 'AIzaSyAFGzsJ4p-LQJ-HhDUzl-xepHyT4XcLOPs';
-  if (!import.meta.env.VITE_API_KEY) {
-    console.warn("VITE_API_KEY no encontrada en las variables de entorno. Usando fallback.");
-  } else {
-    console.log("API Key detectada desde entorno (comienza por:", apiKey.substring(0, 5), "...)");
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  if (!apiKey) {
+    console.error("VITE_OPENAI_API_KEY no encontrada. Configúrala en .env.local (VITE_OPENAI_API_KEY=sk-...).");
+    throw new Error("Falta la clave de OpenAI (VITE_OPENAI_API_KEY).");
   }
-  const ai = new GoogleGenAI({ apiKey });
+  console.log("OpenAI API Key detectada (comienza por:", apiKey.substring(0, 6), "...)");
 
   let prompt = '';
 
-  // Pre-process image if aspect ratio is requested
+  // Pre-process image if aspect ratio is requested (white padding -> outpainting target)
   let processedBase64 = base64Image;
 
   if (config.aspectRatio && config.aspectRatio !== '1:1') {
@@ -31,9 +31,9 @@ export const processSofaImage = async (
 
   if (mode === AppMode.INTEGRATE) {
     prompt = `
-      Eres un Fotógrafo Maestro de Catálogo de Muebles. 
+      Eres un Fotógrafo Maestro de Catálogo de Muebles.
       TU OBJETIVO ÚNICO: Integrar el sofá de la imagen en un salón espectacular MANTENIENDO EL 100% DE FIDELIDAD ESTRUCTURAL.
-      
+
       INSTRUCCIÓN DE OUTPAINTING / RELLENO (CRÍTICO ID: #OUTPAINT):
       - La imagen de entrada puede tener espacios en blanco/vacíos arriba o abajo debido a un cambio de formato.
       - TU TAREA ES RELLENAR ESOS ESPACIOS con más techo/pared (arriba) y suelo (abajo).
@@ -53,21 +53,31 @@ export const processSofaImage = async (
       COMPOSICIÓN (NO CAMBIAR EL PRODUCTO):
       - El sofá debe seguir siendo el protagonista, en el centro visual.
       - NO cambies el tipo de sofá ni “lo mejores”.
-      - NO sustituyas cojines ni añadas/quites cojines. No añadas mantas encima.
+      - NO sustituyas cojines ni añadas/quites cojines. No añadas mantas encima del sofá.
       - NO recortes partes del sofá. Debe verse completo.
+      - PROHIBIDO colocar cualquier objeto que tape, cruce, se apoye o pase por delante ocultando el sofá. La decoración va SIEMPRE alrededor o por delante a baja altura (mesa de centro), nunca tapándolo.
 
       INTEGRACIÓN REALISTA (SIN TOCAR EL SOFÁ):
       - Ajusta SOLO el entorno: crea un salón coherente alrededor del sofá.
       - Añade sombra de contacto realista debajo de las patas/base SIN tapar ni deformar el sofá.
       - Iluminación: solo ajustes suaves para coherencia ambiental, sin cambiar color real del tapizado.
 
-      AMBIENTE (FONDO SOLO):
+      AMBIENTE — SALÓN COMPLETO Y CON SENTIDO (FONDO SOLO):
+      - OBJETIVO DE ESCENA: genera un SALÓN REAL Y HABITADO, completamente amueblado y coherente. NO un sofá flotando en un fondo vacío o en un estudio sin contexto.
+      - El espacio debe tener lógica: proporciones realistas, perspectiva correcta, suelo y paredes continuos, y una fuente de luz creíble (ventana y/o lámparas).
       - Estilo: ${config.style}.
       - Paredes: ${config.wallColor}.
       - Suelo: ${config.flooring}.
       - Iluminación: ${config.lighting}.
-      - El entorno debe ser de alta gama, pero NEUTRO para que el sofá destaque.
-      - Evita elementos que distraigan (nada delante del sofá, nada que lo tape).
+      ${config.addDecor
+        ? `- DECORACIÓN ACTIVADA: equipa el salón de forma elegante, realista y de gama alta ALREDEDOR del sofá (sin tocarlo ni taparlo). Incluye una combinación coherente de:
+        · Alfombra bajo/delante del sofá.
+        · Mesa de centro baja delante del sofá (sin ocultarlo), con algún detalle encima (libros, bandeja, jarrón).
+        · Mesa auxiliar o aparador a un lado, lámpara(s) de diseño, plantas de interior.
+        · Cuadros o arte en la pared, cortinas y/o ventana con luz natural.
+        · Detalles de "hogar vivido" (manta doblada sobre un puf o butaca, NUNCA sobre el sofá).
+        - Todo debe combinar con el estilo elegido y verse como un catálogo de decoración premium.`
+        : `- DECORACIÓN MÍNIMA: salón sobrio pero COMPLETO y con sentido (suelo, paredes y luz creíbles), con solo 1-2 elementos discretos (p. ej. una planta y un cuadro) para que NO parezca un fondo vacío. El sofá destaca al máximo.`}
 
       LISTA DE NEGATIVOS (NO HACER):
       - NO cambiar cabezales/reposacabezas.
@@ -141,7 +151,7 @@ export const processSofaImage = async (
       - NO reemplazar el canapé por otro, NO añadir patas nuevas.
 
       VERIFICACIÓN FINAL (OBLIGATORIA ANTES DE ENTREGAR):
-      1) ¿La etiqueta/logo es idéntica y 100% legible? 
+      1) ¿La etiqueta/logo es idéntica y 100% legible?
       2) ¿El colchón+canapé mantienen la misma orientación exacta (sin rotación/flip)?
       3) ¿La textura y costuras son 1:1 sin inventos?
       Si alguna respuesta es NO, rehacer manteniendo el producto intacto.
@@ -152,56 +162,91 @@ export const processSofaImage = async (
     prompt = `
       Eres un Especialista en Renderizado de Textiles para Mobiliario Premium.
       TU OBJETIVO: Cambiar el color del sofá preservando su ADN ESTRUCTURAL Y TEXTURA.
-      
+
       REGLAS DE RECOLOREADO FIDELIGNO:
       1. INTEGRIDAD DE TEXTURA: Mantén la trama de la tela, los pliegues naturales y las sombras originales. Solo cambia el tinte cromático.
       2. PROTECCIÓN DE DETALLES: No cambies el color de las patas ni de los accesorios si los tiene.
       3. COLOR OBJETIVO: ${config.targetSofaColor || 'Azul Marino'}. El tono debe ser uniforme y premium.
-      
+
       ENTORNO: Presentación de catálogo en estudio neutro minimalista para que el diseño del sofá sea el protagonista absoluto.
     `.trim();
   }
 
   try {
-    const modelName = 'gemini-2.5-flash-image';
-    console.log(`Llamando a Gemini con modelo: ${modelName}`);
+    const modelName = 'gpt-image-1';
+    const size = aspectRatioToSize(config.aspectRatio);
+    console.log(`Llamando a OpenAI con modelo: ${modelName} (size: ${size})`);
 
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: modelName,
-      contents: {
-        parts: [
-          {
-            inlineData: {
-              data: processedBase64.split(',')[1] || processedBase64,
-              mimeType: mimeType,
-            },
-          },
-          { text: prompt },
-        ],
+    // Convert the (possibly padded) data URL into a PNG Blob for the multipart upload
+    const imageBlob = await dataUrlToBlob(processedBase64, mimeType);
+
+    const formData = new FormData();
+    formData.append('model', modelName);
+    formData.append('image', imageBlob, 'sofa.png');
+    formData.append('prompt', prompt);
+    formData.append('size', size);
+    formData.append('quality', 'high');
+    // input_fidelity=high preserva al máximo el producto original (sofá/colchón/etiqueta)
+    formData.append('input_fidelity', 'high');
+    formData.append('n', '1');
+
+    const response = await fetch(OPENAI_IMAGE_EDIT_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
       },
-      // @ts-ignore - Parámetro específico para modelos de generación de imagen
-      generationConfig: {
-      }
+      body: formData,
     });
 
-    for (const part of response.candidates?.[0]?.content?.parts || []) {
-      if (part.inlineData) {
-        return {
-          generatedUrl: `data:image/png;base64,${part.inlineData.data}`,
-          processedInputUrl: processedBase64
-        };
-      }
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Error de OpenAI:", response.status, errText);
+      throw new Error(`OpenAI ${response.status}: ${errText}`);
     }
 
-    console.warn("Gemini no devolvió ninguna imagen en la respuesta:", response);
+    const data = await response.json();
+    const b64 = data?.data?.[0]?.b64_json;
+
+    if (b64) {
+      return {
+        generatedUrl: `data:image/png;base64,${b64}`,
+        processedInputUrl: processedBase64,
+      };
+    }
+
+    console.warn("OpenAI no devolvió ninguna imagen en la respuesta:", data);
     return null;
   } catch (error: any) {
-    console.error("Error detallado en Gemini:", error);
-    // Log detailed error information to help debug in Hostinger console
+    console.error("Error detallado en OpenAI:", error);
     if (error.status) console.error("Status Code:", error.status);
     if (error.message) console.error("Error Message:", error.message);
     throw error;
   }
+};
+
+// Mapea la relación de aspecto a uno de los tamaños soportados por gpt-image-1
+const aspectRatioToSize = (ratioStr?: string): string => {
+  if (!ratioStr || ratioStr === '1:1') return '1024x1024';
+  const [w, h] = ratioStr.split(':').map(Number);
+  if (!w || !h) return '1024x1024';
+  if (w > h) return '1536x1024'; // horizontal
+  if (h > w) return '1024x1536'; // vertical
+  return '1024x1024';
+};
+
+const dataUrlToBlob = async (dataUrl: string, fallbackMime: string): Promise<Blob> => {
+  // Si ya es un data URL, fetch lo convierte directamente a Blob
+  if (dataUrl.startsWith('data:')) {
+    const res = await fetch(dataUrl);
+    return await res.blob();
+  }
+  // Si es base64 puro, decodifícalo manualmente
+  const byteString = atob(dataUrl);
+  const bytes = new Uint8Array(byteString.length);
+  for (let i = 0; i < byteString.length; i++) {
+    bytes[i] = byteString.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: fallbackMime || 'image/png' });
 };
 
 const adjustImageAspectRatio = (base64: string, ratioStr: string): Promise<string> => {
@@ -237,25 +282,18 @@ const adjustImageAspectRatio = (base64: string, ratioStr: string): Promise<strin
       canvas.width = newWidth;
       canvas.height = newHeight;
 
-      // Fill with transparent or white?
       // White is safer for "studio" extensions
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, newWidth, newHeight);
 
       // Draw original image centered
       const x = (newWidth - img.width) / 2;
-      // Position: Center verticallly usually best for general integration
-      // const y = (newHeight - img.height) / 2; 
-
-      // EXPERIMENTAL: For MATTRESS, maybe align to BOTTOM so the floor is continuous?
-      // If we center a bed, we have to invent floor below and ceiling above.
-      // If we align bottom, we only invent ceiling.
-      // Let's stick to CENTER as it's the safest bet for the AI to understand "context".
       const y = (newHeight - img.height) / 2;
 
       ctx.drawImage(img, x, y);
 
-      resolve(canvas.toDataURL('image/jpeg', 0.9));
+      // PNG para no perder calidad ni introducir artefactos JPEG en los bordes
+      resolve(canvas.toDataURL('image/png'));
     };
     img.onerror = reject;
     img.src = base64;

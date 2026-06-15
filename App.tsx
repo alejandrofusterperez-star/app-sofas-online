@@ -3,7 +3,7 @@ import React, { useState, useRef } from 'react';
 import { Layout } from './components/Layout';
 import { StyleSelector } from './components/StyleSelector';
 import { InteriorStyle, Lighting, VisualizationConfig, GenerationResult, AppMode } from './types';
-import { processSofaImage } from './services/geminiService';
+import { processSofaImage } from './services/openaiService';
 import { Login } from './components/Login';
 import { ResultCard } from './components/ResultCard';
 
@@ -17,7 +17,8 @@ const App: React.FC = () => {
     wallColor: '#ffffff',
     lighting: Lighting.NATURAL,
     flooring: 'Roble Claro',
-    targetSofaColor: 'Verde OK'
+    targetSofaColor: 'Verde OK',
+    addDecor: true
   });
   const [results, setResults] = useState<GenerationResult[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);

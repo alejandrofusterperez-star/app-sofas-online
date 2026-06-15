@@ -28,6 +28,7 @@ export interface VisualizationConfig {
   flooring: string;
   targetSofaColor?: string;
   addPillows?: boolean;
+  addDecor?: boolean;
   aspectRatio?: string;
 }
 

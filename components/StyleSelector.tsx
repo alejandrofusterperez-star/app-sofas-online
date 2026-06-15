@@ -158,6 +158,39 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
         </select>
       </div>
 
+      {/* Decoration toggle for Integrate (sofa) mode */}
+      {mode === AppMode.INTEGRATE && (
+        <div>
+          {commonHeader('Decoración del salón')}
+          <div
+            onClick={() => onChange({ ...config, addDecor: !config.addDecor })}
+            className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all cursor-pointer group ${config.addDecor
+              ? 'border-[#74AE2C] bg-[#74AE2C]/5'
+              : 'border-slate-100 bg-white hover:border-slate-200'
+              }`}
+          >
+            <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-colors ${config.addDecor
+              ? 'bg-[#74AE2C] border-[#74AE2C]'
+              : 'border-slate-300 bg-white group-hover:border-[#74AE2C]'
+              }`}>
+              {config.addDecor && (
+                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </div>
+            <div>
+              <span className={`block text-sm font-bold ${config.addDecor ? 'text-[#74AE2C]' : 'text-slate-600'}`}>
+                Salón equipado y decorado
+              </span>
+              <span className="text-xs text-slate-400">
+                Añade alfombra, mesa de centro, lámparas, plantas y arte (sin tapar el sofá)
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Pillow toggle for Mattress mode */}
       {mode === AppMode.MATTRESS && (
         <div>
