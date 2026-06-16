@@ -6,9 +6,14 @@ import { InteriorStyle, Lighting, VisualizationConfig, GenerationResult, AppMode
 import { processSofaImage } from './services/openaiService';
 import { Login } from './components/Login';
 import { ResultCard } from './components/ResultCard';
+import { WhatsNew } from './components/WhatsNew';
+
+// Cambia esta clave cada vez que anuncies una novedad para volver a mostrar el modal.
+const WHATS_NEW_KEY = 'oksofas_whatsnew_telas_v1';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [mode, setMode] = useState<AppMode>(AppMode.INTEGRATE);
   const [baseImage, setBaseImage] = useState<string | null>(null);
   const [mimeType, setMimeType] = useState<string>('');
@@ -84,12 +89,33 @@ const App: React.FC = () => {
     }
   };
 
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+    try {
+      if (!localStorage.getItem(WHATS_NEW_KEY)) {
+        setShowWhatsNew(true);
+      }
+    } catch {
+      setShowWhatsNew(true);
+    }
+  };
+
+  const closeWhatsNew = () => {
+    setShowWhatsNew(false);
+    try {
+      localStorage.setItem(WHATS_NEW_KEY, '1');
+    } catch {
+      /* ignore */
+    }
+  };
+
   if (!isAuthenticated) {
-    return <Login onLogin={() => setIsAuthenticated(true)} />;
+    return <Login onLogin={handleLogin} />;
   }
 
   return (
     <Layout>
+      {showWhatsNew && <WhatsNew onClose={closeWhatsNew} />}
       <div className="max-w-7xl mx-auto px-4 py-8 w-full flex-1">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
 
