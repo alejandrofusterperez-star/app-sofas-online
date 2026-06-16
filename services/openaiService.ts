@@ -18,15 +18,19 @@ export const processSofaImage = async (
 
   let prompt = '';
 
-  // Pre-process image if aspect ratio is requested (white padding -> outpainting target)
-  let processedBase64 = base64Image;
+  // El output de gpt-image-1 SIEMPRE tiene un tamaño fijo (1024x1024, 1536x1024 o 1024x1536).
+  // Si la foto del sofá no coincide con esa proporción, el modelo la RECORTA para encajarla.
+  // Para evitarlo, "encajamos" (letterbox) la imagen de entrada en esa misma proporción + margen,
+  // de forma que el producto siempre cabe entero y la IA solo rellena alrededor.
+  const size = aspectRatioToSize(config.aspectRatio);
+  const [outW, outH] = size.split('x').map(Number);
+  const targetRatio = outW / outH;
 
-  if (config.aspectRatio && config.aspectRatio !== '1:1') {
-    try {
-      processedBase64 = await adjustImageAspectRatio(base64Image, config.aspectRatio);
-    } catch (e) {
-      console.warn("Could not adjust aspect ratio, using original image", e);
-    }
+  let processedBase64 = base64Image;
+  try {
+    processedBase64 = await padImageToRatio(base64Image, targetRatio);
+  } catch (e) {
+    console.warn("Could not letterbox the input image, using original", e);
   }
 
   if (mode === AppMode.INTEGRATE) {
@@ -159,22 +163,49 @@ export const processSofaImage = async (
       CALIDAD: fotografía de catálogo realista, nítida, sin distorsión del producto.
     `.trim();
   } else {
+    // Cambios independientes: el usuario puede pedir solo color, solo tela, o ambos.
+    const changeColor = config.changeColor !== false; // por defecto true
+    const changeFabric = !!config.changeFabric;
+
+    const colorBlock = changeColor
+      ? `COLOR (CAMBIAR):
+      - Cambia el tinte del tapizado a: ${config.targetSofaColor || 'Azul Marino'}.
+      - El tono debe ser uniforme, realista y premium.
+      - Respeta SIEMPRE las luces, sombras y pliegues originales (solo cambia el color, no el relieve).`
+      : `COLOR (CONSERVAR):
+      - MANTÉN EXACTAMENTE el color y el tono original del tapizado. NO lo alteres en absoluto.`;
+
+    const fabricBlock = changeFabric
+      ? `TELA / MATERIAL (CAMBIAR):
+      - Cambia el tipo de tejido del tapizado a: ${config.targetFabric || 'Chenilla'}.
+      - Reproduce de forma fotorrealista la trama, el brillo, el relieve y el comportamiento de la luz característicos de ese material (p. ej. el terciopelo refleja la luz, el lino es mate y texturizado, la pana tiene canalé, la piel/cuero es lisa y brillante).
+      - Aplica el nuevo material respetando la forma, los pliegues y las costuras existentes del sofá.`
+      : `TELA / MATERIAL (CONSERVAR):
+      - MANTÉN EXACTAMENTE el mismo tejido y textura original (misma trama y acabado). NO cambies el material.`;
+
     prompt = `
       Eres un Especialista en Renderizado de Textiles para Mobiliario Premium.
-      TU OBJETIVO: Cambiar el color del sofá preservando su ADN ESTRUCTURAL Y TEXTURA.
+      TU OBJETIVO: Re-tapizar el sofá preservando su ADN ESTRUCTURAL, cambiando ÚNICAMENTE lo que se indica abajo.
 
-      REGLAS DE RECOLOREADO FIDELIGNO:
-      1. INTEGRIDAD DE TEXTURA: Mantén la trama de la tela, los pliegues naturales y las sombras originales. Solo cambia el tinte cromático.
-      2. PROTECCIÓN DE DETALLES: No cambies el color de las patas ni de los accesorios si los tiene.
-      3. COLOR OBJETIVO: ${config.targetSofaColor || 'Azul Marino'}. El tono debe ser uniforme y premium.
+      BLOQUEO ESTRUCTURAL (PRIORIDAD #1):
+      - NO cambies la forma, el número de plazas, brazos, respaldos, reposacabezas, cojines, patas ni las proporciones.
+      - NO rotes, NO voltees (flip) y NO recortes el sofá: debe verse COMPLETO y con la MISMA orientación y ángulo de cámara.
+      - NO conviertas el sofá en cama, NO abras mecanismos ni despliegues módulos. El mueble se mantiene tal cual.
+      - PROTECCIÓN DE DETALLES: no cambies el color ni el material de las patas ni de los accesorios.
 
-      ENTORNO: Presentación de catálogo en estudio neutro minimalista para que el diseño del sofá sea el protagonista absoluto.
+      CAMBIOS SOLICITADOS:
+      ${colorBlock}
+
+      ${fabricBlock}
+
+      ENTORNO: Presentación de catálogo en estudio neutro minimalista, fondo limpio, para que el sofá sea el protagonista absoluto.
+
+      VERIFICACIÓN FINAL: el sofá debe ser el MISMO modelo, misma forma y orientación; solo deben verse los cambios solicitados de color y/o material.
     `.trim();
   }
 
   try {
     const modelName = 'gpt-image-1';
-    const size = aspectRatioToSize(config.aspectRatio);
     console.log(`Llamando a OpenAI con modelo: ${modelName} (size: ${size})`);
 
     // Convert the (possibly padded) data URL into a PNG Blob for the multipart upload
@@ -249,7 +280,12 @@ const dataUrlToBlob = async (dataUrl: string, fallbackMime: string): Promise<Blo
   return new Blob([bytes], { type: fallbackMime || 'image/png' });
 };
 
-const adjustImageAspectRatio = (base64: string, ratioStr: string): Promise<string> => {
+// "Encaja" (letterbox) la imagen dentro de un lienzo con la proporción de salida exacta,
+// añadiendo un margen de seguridad alrededor. Así el producto NUNCA se recorta: queda
+// contenido por completo y gpt-image-1 solo rellena el espacio blanco con la escena.
+const MARGIN = 0.12; // 12% de aire alrededor del producto
+
+const padImageToRatio = (base64: string, targetRatio: number): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -260,36 +296,36 @@ const adjustImageAspectRatio = (base64: string, ratioStr: string): Promise<strin
         return;
       }
 
-      // Parse ratio "3:4" -> 0.75
-      const [w, h] = ratioStr.split(':').map(Number);
-      const targetRatio = w / h;
+      const w = img.width;
+      const h = img.height;
 
-      // Calculate new dimensions based on original image
-      // We want to CONTAIN the image inside the new aspect ratio
-      let newWidth = img.width;
-      let newHeight = img.height;
-
-      const currentRatio = img.width / img.height;
+      // 1) Lienzo mínimo que CONTIENE la imagen con la proporción objetivo
+      let boxW = w;
+      let boxH = h;
+      const currentRatio = w / h;
 
       if (currentRatio > targetRatio) {
-        // Image is wider than target (e.g. square vs vertical) -> Increase Height (add bars top/bottom)
-        newHeight = img.width / targetRatio;
+        // Imagen más ancha que el objetivo -> añade altura (barras arriba/abajo)
+        boxH = w / targetRatio;
       } else {
-        // Image is taller than target -> Increase Width (add bars left/right)
-        newWidth = img.height * targetRatio;
+        // Imagen más alta que el objetivo -> añade anchura (barras a los lados)
+        boxW = h * targetRatio;
       }
 
-      canvas.width = newWidth;
-      canvas.height = newHeight;
+      // 2) Margen de aire uniforme alrededor (mantiene la proporción)
+      const canvasW = boxW * (1 + 2 * MARGIN);
+      const canvasH = boxH * (1 + 2 * MARGIN);
 
-      // White is safer for "studio" extensions
+      canvas.width = canvasW;
+      canvas.height = canvasH;
+
+      // Fondo blanco -> zona a rellenar por la IA (estudio / escena)
       ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, newWidth, newHeight);
+      ctx.fillRect(0, 0, canvasW, canvasH);
 
-      // Draw original image centered
-      const x = (newWidth - img.width) / 2;
-      const y = (newHeight - img.height) / 2;
-
+      // Dibuja la imagen original centrada, sin escalarla
+      const x = (canvasW - w) / 2;
+      const y = (canvasH - h) / 2;
       ctx.drawImage(img, x, y);
 
       // PNG para no perder calidad ni introducir artefactos JPEG en los bordes

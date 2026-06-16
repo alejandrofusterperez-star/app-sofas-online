@@ -27,6 +27,9 @@ export interface VisualizationConfig {
   lighting: Lighting;
   flooring: string;
   targetSofaColor?: string;
+  changeColor?: boolean;
+  changeFabric?: boolean;
+  targetFabric?: string;
   addPillows?: boolean;
   addDecor?: boolean;
   aspectRatio?: string;

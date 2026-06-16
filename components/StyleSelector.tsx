@@ -24,6 +24,17 @@ const wallColors = [
   { name: 'Arena Desierto', value: '#EDC9AF' },
 ];
 
+const fabricTypes = [
+  'Chenilla',
+  'Lino',
+  'Terciopelo',
+  'Pana',
+  'Bouclé',
+  'Algodón',
+  'Piel / Cuero',
+  'Antimanchas',
+];
+
 const sofaColors = [
   { name: 'Crema Pinterest', value: '#F3E5AB' },
   { name: 'Beige Lino', value: '#E3D9C6' },
@@ -46,36 +57,107 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
     </label>
   );
 
+  const toggleCard = (active: boolean, onToggle: () => void, title: string, subtitle: string) => (
+    <div
+      onClick={() => !disabled && onToggle()}
+      className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all cursor-pointer group ${active
+        ? 'border-[#74AE2C] bg-[#74AE2C]/5'
+        : 'border-slate-100 bg-white hover:border-slate-200'
+        }`}
+    >
+      <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-colors ${active
+        ? 'bg-[#74AE2C] border-[#74AE2C]'
+        : 'border-slate-300 bg-white group-hover:border-[#74AE2C]'
+        }`}>
+        {active && (
+          <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
+        )}
+      </div>
+      <div>
+        <span className={`block text-sm font-bold ${active ? 'text-[#74AE2C]' : 'text-slate-600'}`}>{title}</span>
+        <span className="text-xs text-slate-400">{subtitle}</span>
+      </div>
+    </div>
+  );
+
 
   if (mode === AppMode.COLOR_CHANGE) {
     return (
       <div className="space-y-6 animate-in fade-in duration-300">
         <div>
-          {commonHeader('Elige el nuevo tapizado')}
-          <div className="grid grid-cols-4 gap-4">
-            {sofaColors.map((color) => (
-              <button
-                key={color.name}
-                title={color.name}
-                onClick={() => onChange({ ...config, targetSofaColor: color.name })}
-                disabled={disabled}
-                className="flex flex-col items-center gap-2 group outline-none"
-              >
-                <div
-                  className={`w-full aspect-square rounded-2xl border-2 transition-all duration-300 ${config.targetSofaColor === color.name
-                    ? 'border-[#74AE2C] ring-4 ring-[#74AE2C]/10 scale-105'
-                    : 'border-slate-100 group-hover:border-slate-300'
-                    }`}
-                  style={{ backgroundColor: color.value }}
-                />
-                <span className={`text-[10px] font-bold text-center leading-tight transition-colors ${config.targetSofaColor === color.name ? 'text-[#74AE2C]' : 'text-slate-400'
-                  }`}>
-                  {color.name}
-                </span>
-              </button>
-            ))}
+          {commonHeader('¿Qué quieres cambiar?')}
+          <div className="space-y-3">
+            {toggleCard(
+              !!config.changeColor,
+              () => onChange({ ...config, changeColor: !config.changeColor }),
+              'Cambiar el color',
+              'Aplica un nuevo tono al tapizado'
+            )}
+            {toggleCard(
+              !!config.changeFabric,
+              () => onChange({ ...config, changeFabric: !config.changeFabric }),
+              'Cambiar la tela / material',
+              'Cambia el tipo de tejido (terciopelo, lino, pana...)'
+            )}
           </div>
+          {!config.changeColor && !config.changeFabric && (
+            <p className="text-xs text-amber-600 mt-3 font-medium">
+              Selecciona al menos una opción para ver cambios.
+            </p>
+          )}
         </div>
+
+        {config.changeColor && (
+          <div className="border-t border-slate-100 pt-6">
+            {commonHeader('Elige el nuevo color')}
+            <div className="grid grid-cols-4 gap-4">
+              {sofaColors.map((color) => (
+                <button
+                  key={color.name}
+                  title={color.name}
+                  onClick={() => onChange({ ...config, targetSofaColor: color.name })}
+                  disabled={disabled}
+                  className="flex flex-col items-center gap-2 group outline-none"
+                >
+                  <div
+                    className={`w-full aspect-square rounded-2xl border-2 transition-all duration-300 ${config.targetSofaColor === color.name
+                      ? 'border-[#74AE2C] ring-4 ring-[#74AE2C]/10 scale-105'
+                      : 'border-slate-100 group-hover:border-slate-300'
+                      }`}
+                    style={{ backgroundColor: color.value }}
+                  />
+                  <span className={`text-[10px] font-bold text-center leading-tight transition-colors ${config.targetSofaColor === color.name ? 'text-[#74AE2C]' : 'text-slate-400'
+                    }`}>
+                    {color.name}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {config.changeFabric && (
+          <div className="border-t border-slate-100 pt-6">
+            {commonHeader('Elige la nueva tela')}
+            <div className="grid grid-cols-2 gap-2">
+              {fabricTypes.map((fabric) => (
+                <button
+                  key={fabric}
+                  onClick={() => onChange({ ...config, targetFabric: fabric })}
+                  disabled={disabled}
+                  className={`px-3 py-2.5 text-xs font-bold rounded-xl border transition-all ${config.targetFabric === fabric
+                    ? 'bg-[#74AE2C] border-[#74AE2C] text-white shadow-lg shadow-[#74AE2C]/20'
+                    : 'bg-white border-slate-100 text-slate-500 hover:border-[#74AE2C]/30'
+                    }`}
+                >
+                  {fabric}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mt-6 border-t border-slate-100 pt-6">
           {commonHeader('Formato de imagen')}

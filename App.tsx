@@ -18,6 +18,9 @@ const App: React.FC = () => {
     lighting: Lighting.NATURAL,
     flooring: 'Roble Claro',
     targetSofaColor: 'Verde OK',
+    changeColor: true,
+    changeFabric: false,
+    targetFabric: 'Chenilla',
     addDecor: true
   });
   const [results, setResults] = useState<GenerationResult[]>([]);
