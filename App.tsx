@@ -13,6 +13,7 @@ const WHATS_NEW_KEY = 'oksofas_whatsnew_telas_v1';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState<string>('');
   const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [mode, setMode] = useState<AppMode>(AppMode.INTEGRATE);
   const [baseImage, setBaseImage] = useState<string | null>(null);
@@ -89,7 +90,8 @@ const App: React.FC = () => {
     }
   };
 
-  const handleLogin = () => {
+  const handleLogin = (username: string) => {
+    setCurrentUser(username);
     setIsAuthenticated(true);
     try {
       if (!localStorage.getItem(WHATS_NEW_KEY)) {
@@ -279,7 +281,7 @@ const App: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                   {results.map((result, idx) => (
-                    <ResultCard key={result.id} result={result} idx={idx} />
+                    <ResultCard key={result.id} result={result} idx={idx} allowHiRes={currentUser === 'digency'} />
                   ))}
                 </div>
 

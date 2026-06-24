@@ -5,11 +5,57 @@ import { GenerationResult, AppMode } from '../types';
 interface ResultCardProps {
     result: GenerationResult;
     idx: number;
+    allowHiRes?: boolean;
 }
 
-export const ResultCard: React.FC<ResultCardProps> = ({ result, idx }) => {
+export const ResultCard: React.FC<ResultCardProps> = ({ result, idx, allowHiRes = false }) => {
     const [showOriginal, setShowOriginal] = useState(false);
     const [isFullScreen, setIsFullScreen] = useState(false);
+
+    // Descarga en alta resolución cuadrada (2400x2400). La imagen se ajusta
+    // dentro del cuadrado preservando su proporción, con relleno blanco.
+    const downloadHiRes = async () => {
+        const SIZE = 2400;
+        try {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            await new Promise<void>((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error('No se pudo cargar la imagen'));
+                img.src = result.url;
+            });
+
+            const canvas = document.createElement('canvas');
+            canvas.width = SIZE;
+            canvas.height = SIZE;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) throw new Error('Canvas no disponible');
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, SIZE, SIZE);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+
+            const scale = Math.min(SIZE / img.width, SIZE / img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, (SIZE - w) / 2, (SIZE - h) / 2, w, h);
+
+            const blob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+            if (!blob) throw new Error('No se pudo generar el archivo');
+
+            const blobUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = `ok-sofas-vision-${idx + 1}-2400x2400.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+        } catch (err) {
+            console.error('Error al descargar en alta resolución:', err);
+        }
+    };
 
     return (
         <>
@@ -31,36 +77,50 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result, idx }) => {
                             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#74AE2C]">Inspiración ${idx + 1}</p>
                             <h4 className="text-xl font-black uppercase tracking-tight">{result.mode === AppMode.INTEGRATE ? result.style || 'AI Design' : 'Estudio Color'}</h4>
                         </div>
-                        <button
-                            onClick={async () => {
-                                try {
-                                    const response = await fetch(result.url);
-                                    const blob = await response.blob();
-                                    const blobUrl = URL.createObjectURL(blob);
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        const response = await fetch(result.url);
+                                        const blob = await response.blob();
+                                        const blobUrl = URL.createObjectURL(blob);
 
-                                    const link = document.createElement('a');
-                                    link.href = blobUrl;
-                                    link.download = `ok-sofas-vision-${idx + 1}.png`;
-                                    document.body.appendChild(link);
-                                    link.click();
-                                    document.body.removeChild(link);
+                                        const link = document.createElement('a');
+                                        link.href = blobUrl;
+                                        link.download = `ok-sofas-vision-${idx + 1}.png`;
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
 
-                                    setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
-                                } catch (err) {
-                                    console.error("Error al descargar la imagen:", err);
-                                    const link = document.createElement('a');
-                                    link.href = result.url;
-                                    link.download = `ok-sofas-vision-${idx + 1}.png`;
-                                    link.click();
-                                }
-                            }}
-                            className="pointer-events-auto bg-[#74AE2C] text-white px-6 py-4 rounded-2xl shadow-xl hover:bg-[#639626] transition-all flex items-center gap-3 font-black text-xs uppercase tracking-widest"
-                        >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
-                            Guardar
-                        </button>
+                                        setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+                                    } catch (err) {
+                                        console.error("Error al descargar la imagen:", err);
+                                        const link = document.createElement('a');
+                                        link.href = result.url;
+                                        link.download = `ok-sofas-vision-${idx + 1}.png`;
+                                        link.click();
+                                    }
+                                }}
+                                className="pointer-events-auto bg-[#74AE2C] text-white px-6 py-4 rounded-2xl shadow-xl hover:bg-[#639626] transition-all flex items-center gap-3 font-black text-xs uppercase tracking-widest"
+                            >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                Guardar
+                            </button>
+                            {allowHiRes && (
+                                <button
+                                    onClick={downloadHiRes}
+                                    title="Descargar en 2400 x 2400 px"
+                                    className="pointer-events-auto bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-xl hover:bg-black transition-all flex items-center gap-3 font-black text-xs uppercase tracking-widest"
+                                >
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    2400 px
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
 

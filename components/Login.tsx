@@ -17,7 +17,7 @@ const BACKGROUNDS = [
 ];
 
 interface LoginProps {
-    onLogin: () => void;
+    onLogin: (username: string) => void;
 }
 
 export const Login: React.FC<LoginProps> = ({ onLogin }) => {
@@ -42,9 +42,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         e.preventDefault();
         const isValidAlejandro = username === 'alejandro' && password === 'Sofas123.';
         const isValidOficina = username === 'oficina' && password === 'Sofas123.';
+        const isValidDigency = username === 'digency' && password === 'Digency123.';
 
-        if (isValidAlejandro || isValidOficina) {
-            onLogin();
+        if (isValidAlejandro || isValidOficina || isValidDigency) {
+            onLogin(username);
         } else {
             setError('Credenciales incorrectas. Inténtalo de nuevo.');
         }
