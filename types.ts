@@ -33,6 +33,8 @@ export interface VisualizationConfig {
   addPillows?: boolean;
   addDecor?: boolean;
   aspectRatio?: string;
+  // Solo para el usuario digency: permite cambiar el color del sofá dentro del modo INTEGRAR.
+  integrateColorChange?: boolean;
 }
 
 export interface GenerationResult {

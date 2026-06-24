@@ -7,6 +7,7 @@ interface StyleSelectorProps {
   onChange: (config: VisualizationConfig) => void;
   disabled?: boolean;
   mode: AppMode;
+  allowColorChange?: boolean;
 }
 
 const styles = Object.values(InteriorStyle);
@@ -49,7 +50,7 @@ const sofaColors = [
   { name: 'Burdeos', value: '#7F1D1D' },
 ];
 
-export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, disabled, mode }) => {
+export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, disabled, mode, allowColorChange }) => {
   const commonHeader = (title: string) => (
     <label className="block text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
       <div className="w-1.5 h-1.5 bg-[#74AE2C] rounded-full"></div>
@@ -270,6 +271,48 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
               </span>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Cambio de color del sofá — solo usuario digency, dentro de Integrar */}
+      {mode === AppMode.INTEGRATE && allowColorChange && (
+        <div className="border-t border-slate-100 pt-6">
+          {commonHeader('Color del sofá')}
+          {toggleCard(
+            !!config.integrateColorChange,
+            () => onChange({ ...config, integrateColorChange: !config.integrateColorChange }),
+            'Cambiar el color del sofá',
+            'Integra el mismo sofá con un nuevo tono de tapizado'
+          )}
+
+          {config.integrateColorChange && (
+            <div className="mt-5">
+              {commonHeader('Elige el nuevo color')}
+              <div className="grid grid-cols-4 gap-4">
+                {sofaColors.map((color) => (
+                  <button
+                    key={color.name}
+                    title={color.name}
+                    onClick={() => onChange({ ...config, targetSofaColor: color.name })}
+                    disabled={disabled}
+                    className="flex flex-col items-center gap-2 group outline-none"
+                  >
+                    <div
+                      className={`w-full aspect-square rounded-2xl border-2 transition-all duration-300 ${config.targetSofaColor === color.name
+                        ? 'border-[#74AE2C] ring-4 ring-[#74AE2C]/10 scale-105'
+                        : 'border-slate-100 group-hover:border-slate-300'
+                        }`}
+                      style={{ backgroundColor: color.value }}
+                    />
+                    <span className={`text-[10px] font-bold text-center leading-tight transition-colors ${config.targetSofaColor === color.name ? 'text-[#74AE2C]' : 'text-slate-400'
+                      }`}>
+                      {color.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

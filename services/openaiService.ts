@@ -33,10 +33,23 @@ export const processSofaImage = async (
     console.warn("Could not letterbox the input image, using original", e);
   }
 
+  // Solo para digency: cambio de color del sofá DENTRO del modo integrar.
+  const wantsIntegrateColor = !!config.integrateColorChange && !!config.targetSofaColor;
+
+  const integrateColorRule = wantsIntegrateColor
+    ? `CAMBIO DE COLOR DEL SOFÁ (ÚNICA EXCEPCIÓN PERMITIDA AL BLOQUEO):
+      - Cambia ÚNICAMENTE el TINTE/COLOR del tapizado del sofá a: ${config.targetSofaColor}.
+      - Aplica el nuevo tono de forma uniforme, realista y premium a TODO el tapizado.
+      - Respeta EXACTAMENTE las luces, sombras, pliegues, costuras, capitoné, botones y relieve originales: SOLO cambia el color, jamás la textura ni la forma.
+      - NO cambies el color ni el material de las PATAS, herrajes, cremalleras ni de ningún elemento que no sea tela.
+      - Todo lo demás del sofá permanece 1:1 idéntico.`
+    : `COLOR DEL SOFÁ (CONSERVAR):
+      - NO cambies el color del sofá (salvo microajuste de luz global, sin alterar el tono real).`;
+
   if (mode === AppMode.INTEGRATE) {
     prompt = `
       Eres un Fotógrafo Maestro de Catálogo de Muebles.
-      TU OBJETIVO ÚNICO: Integrar el sofá de la imagen en un salón espectacular MANTENIENDO EL 100% DE FIDELIDAD ESTRUCTURAL.
+      TU OBJETIVO ÚNICO: Integrar el sofá de la imagen en un salón espectacular MANTENIENDO EL 100% DE FIDELIDAD ESTRUCTURAL${wantsIntegrateColor ? ', CAMBIANDO ÚNICAMENTE EL COLOR DEL TAPIZADO' : ''}.
 
       INSTRUCCIÓN DE OUTPAINTING / RELLENO (CRÍTICO ID: #OUTPAINT):
       - La imagen de entrada puede tener espacios en blanco/vacíos arriba o abajo debido a un cambio de formato.
@@ -61,10 +74,12 @@ export const processSofaImage = async (
       - NO recortes partes del sofá. Debe verse completo.
       - PROHIBIDO colocar cualquier objeto que tape, cruce, se apoye o pase por delante ocultando el sofá. La decoración va SIEMPRE alrededor o por delante a baja altura (mesa de centro), nunca tapándolo.
 
+      ${integrateColorRule}
+
       INTEGRACIÓN REALISTA (SIN TOCAR EL SOFÁ):
       - Ajusta SOLO el entorno: crea un salón coherente alrededor del sofá.
       - Añade sombra de contacto realista debajo de las patas/base SIN tapar ni deformar el sofá.
-      - Iluminación: solo ajustes suaves para coherencia ambiental, sin cambiar color real del tapizado.
+      - Iluminación: solo ajustes suaves para coherencia ambiental${wantsIntegrateColor ? '.' : ', sin cambiar color real del tapizado.'}
 
       AMBIENTE — SALÓN COMPLETO Y CON SENTIDO (FONDO SOLO):
       - OBJETIVO DE ESCENA: genera un SALÓN REAL Y HABITADO, completamente amueblado y coherente. NO un sofá flotando en un fondo vacío o en un estudio sin contexto.
@@ -89,7 +104,9 @@ export const processSofaImage = async (
       - NO cambiar patas (ni forma ni altura).
       - NO inventar costuras, capitoné, botones o paneles nuevos.
       - NO alterar el patrón del tejido ni su grano.
-      - NO cambiar el color del sofá (salvo microajuste de luz global, sin alterar el tono real).
+      ${wantsIntegrateColor
+        ? '- NO cambiar NADA del sofá salvo el COLOR del tapizado indicado arriba (ni patas, ni costuras, ni forma, ni textura).'
+        : '- NO cambiar el color del sofá (salvo microajuste de luz global, sin alterar el tono real).'}
 
       VERIFICACIÓN FINAL (OBLIGATORIA ANTES DE ENTREGAR):
       1) ¿El sofá es idéntico 1:1 (mismo modelo, mismos detalles, misma textura)?

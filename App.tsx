@@ -181,7 +181,7 @@ const App: React.FC = () => {
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
               </div>
 
-              <StyleSelector config={config} onChange={setConfig} disabled={isGenerating} mode={mode} />
+              <StyleSelector config={config} onChange={setConfig} disabled={isGenerating} mode={mode} allowColorChange={currentUser === 'digency'} />
 
               <button
                 disabled={!baseImage || isGenerating}
