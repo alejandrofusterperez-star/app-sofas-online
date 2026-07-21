@@ -138,6 +138,10 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
                     onClick={() =>
                       onChange({
                         ...config,
+                        // Al elegir una tela nuestra "olvidamos" el cambio de color manual:
+                        // la variación ya define tela + color mediante la imagen de referencia.
+                        changeFabric: true,
+                        changeColor: false,
                         targetFabric: activeFabric.name,
                         targetSofaColor: color.name,
                         fabricReferenceImageUrl: color.image_url || undefined,
@@ -187,6 +191,8 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
                   ...config,
                   fabricReferenceImageUrl: undefined,
                   selectedFabricColorId: undefined,
+                  changeFabric: false,
+                  changeColor: true,
                 })
               }
               className="ml-auto text-slate-400 hover:text-red-500"
@@ -202,78 +208,92 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
   if (mode === AppMode.COLOR_CHANGE) {
     return (
       <div className="space-y-6 animate-in fade-in duration-300">
-        <div>
-          {commonHeader('¿Qué quieres cambiar?')}
-          <div className="space-y-3">
-            {toggleCard(
-              !!config.changeColor,
-              () => onChange({ ...config, changeColor: !config.changeColor }),
-              'Cambiar el color',
-              'Aplica un nuevo tono al tapizado'
-            )}
-            {toggleCard(
-              !!config.changeFabric,
-              () => onChange({ ...config, changeFabric: !config.changeFabric }),
-              'Cambiar la tela / material',
-              'Cambia el tipo de tejido (terciopelo, lino, pana...)'
-            )}
-          </div>
-          {!config.changeColor && !config.changeFabric && (
-            <p className="text-xs text-amber-600 mt-3 font-medium">
-              Selecciona al menos una opción para ver cambios.
+        {/* Admin: la biblioteca de telas manda. Si eliges una tela nuestra,
+            se aplica esa tela exacta y se ocultan los ajustes manuales. */}
+        {isAdmin && (
+          <div>
+            {commonHeader('Tela de nuestra biblioteca')}
+            <p className="text-xs text-slate-400 mb-4 -mt-1">
+              Elige una tela nuestra y su variación: se aplicará esa tela exacta (con su color) usando la imagen de referencia.
             </p>
-          )}
-        </div>
-
-        {config.changeColor && (
-          <div className="border-t border-slate-100 pt-6">
-            {commonHeader('Elige el nuevo color')}
-            <div className="grid grid-cols-4 gap-4">
-              {sofaColors.map((color) => (
-                <button
-                  key={color.name}
-                  title={color.name}
-                  onClick={() => onChange({ ...config, targetSofaColor: color.name })}
-                  disabled={disabled}
-                  className="flex flex-col items-center gap-2 group outline-none"
-                >
-                  <div
-                    className={`w-full aspect-square rounded-2xl border-2 transition-all duration-300 ${config.targetSofaColor === color.name
-                      ? 'border-[#74AE2C] ring-4 ring-[#74AE2C]/10 scale-105'
-                      : 'border-slate-100 group-hover:border-slate-300'
-                      }`}
-                    style={{ backgroundColor: color.value }}
-                  />
-                  <span className={`text-[10px] font-bold text-center leading-tight transition-colors ${config.targetSofaColor === color.name ? 'text-[#74AE2C]' : 'text-slate-400'
-                    }`}>
-                    {color.name}
-                  </span>
-                </button>
-              ))}
-            </div>
+            {renderFabricLibrary()}
           </div>
         )}
 
-        {config.changeFabric && (
-          <div className="border-t border-slate-100 pt-6">
-            {commonHeader(isAdmin ? 'Elige la tela de la biblioteca' : 'Elige la nueva tela')}
-            {isAdmin ? (
-              renderFabricLibrary()
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {fabricTypes.map((fabric) => (
-                  <button
-                    key={fabric}
-                    onClick={() => onChange({ ...config, targetFabric: fabric })}
-                    disabled={disabled}
-                    className={`px-3 py-2.5 text-xs font-bold rounded-xl border transition-all ${config.targetFabric === fabric
-                      ? 'bg-[#74AE2C] border-[#74AE2C] text-white shadow-lg shadow-[#74AE2C]/20'
-                      : 'bg-white border-slate-100 text-slate-500 hover:border-[#74AE2C]/30'
-                      }`}
-                  >
-                    {fabric}
-                  </button>
-                ))}
+        {/* Ajustes manuales. Para admin se ocultan cuando ya hay una tela nuestra elegida. */}
+        {!(isAdmin && config.selectedFabricColorId) && (
+          <div className={isAdmin ? 'border-t border-slate-100 pt-6 space-y-6' : 'space-y-6'}>
+            <div>
+              {commonHeader(isAdmin ? 'O cambia solo el color' : '¿Qué quieres cambiar?')}
+              <div className="space-y-3">
+                {toggleCard(
+                  !!config.changeColor,
+                  () => onChange({ ...config, changeColor: !config.changeColor }),
+                  'Cambiar el color',
+                  'Aplica un nuevo tono al tapizado'
+                )}
+                {!isAdmin &&
+                  toggleCard(
+                    !!config.changeFabric,
+                    () => onChange({ ...config, changeFabric: !config.changeFabric }),
+                    'Cambiar la tela / material',
+                    'Cambia el tipo de tejido (terciopelo, lino, pana...)'
+                  )}
+              </div>
+              {!isAdmin && !config.changeColor && !config.changeFabric && (
+                <p className="text-xs text-amber-600 mt-3 font-medium">
+                  Selecciona al menos una opción para ver cambios.
+                </p>
+              )}
+            </div>
+
+            {config.changeColor && (
+              <div className="border-t border-slate-100 pt-6">
+                {commonHeader('Elige el nuevo color')}
+                <div className="grid grid-cols-4 gap-4">
+                  {sofaColors.map((color) => (
+                    <button
+                      key={color.name}
+                      title={color.name}
+                      onClick={() => onChange({ ...config, targetSofaColor: color.name })}
+                      disabled={disabled}
+                      className="flex flex-col items-center gap-2 group outline-none"
+                    >
+                      <div
+                        className={`w-full aspect-square rounded-2xl border-2 transition-all duration-300 ${config.targetSofaColor === color.name
+                          ? 'border-[#74AE2C] ring-4 ring-[#74AE2C]/10 scale-105'
+                          : 'border-slate-100 group-hover:border-slate-300'
+                          }`}
+                        style={{ backgroundColor: color.value }}
+                      />
+                      <span className={`text-[10px] font-bold text-center leading-tight transition-colors ${config.targetSofaColor === color.name ? 'text-[#74AE2C]' : 'text-slate-400'
+                        }`}>
+                        {color.name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!isAdmin && config.changeFabric && (
+              <div className="border-t border-slate-100 pt-6">
+                {commonHeader('Elige la nueva tela')}
+                <div className="grid grid-cols-2 gap-2">
+                  {fabricTypes.map((fabric) => (
+                    <button
+                      key={fabric}
+                      onClick={() => onChange({ ...config, targetFabric: fabric })}
+                      disabled={disabled}
+                      className={`px-3 py-2.5 text-xs font-bold rounded-xl border transition-all ${config.targetFabric === fabric
+                        ? 'bg-[#74AE2C] border-[#74AE2C] text-white shadow-lg shadow-[#74AE2C]/20'
+                        : 'bg-white border-slate-100 text-slate-500 hover:border-[#74AE2C]/30'
+                        }`}
+                    >
+                      {fabric}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>

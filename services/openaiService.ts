@@ -183,10 +183,12 @@ export const processSofaImage = async (
     `.trim();
   } else {
     // Cambios independientes: el usuario puede pedir solo color, solo tela, o ambos.
-    const changeColor = config.changeColor !== false; // por defecto true
     const changeFabric = !!config.changeFabric;
     // ¿Hay una muestra (swatch) de la biblioteca de telas que se enviará como 2ª imagen?
     const hasFabricReference = changeFabric && !!config.fabricReferenceImageUrl;
+    // Si se eligió una tela nuestra, "olvidamos" el cambio de color manual:
+    // la variación ya define color + material mediante la imagen de referencia.
+    const changeColor = hasFabricReference ? false : config.changeColor !== false;
 
     const fabricReferenceBlock = hasFabricReference
       ? `IMAGEN DE REFERENCIA DE TELA (CRÍTICO, PRIORIDAD MÁXIMA):
@@ -197,7 +199,9 @@ export const processSofaImage = async (
       - El acabado final debe parecer que el sofá está tapizado físicamente con la tela de la muestra.`
       : '';
 
-    const colorBlock = changeColor
+    const colorBlock = hasFabricReference
+      ? '' // El color lo determina la tela de referencia (swatch); no damos instrucción de color.
+      : changeColor
       ? `COLOR (CAMBIAR):
       - Cambia el tinte del tapizado a: ${config.targetSofaColor || 'Azul Marino'}.
       - El tono debe ser uniforme, realista y premium.

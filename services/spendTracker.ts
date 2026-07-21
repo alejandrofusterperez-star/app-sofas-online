@@ -45,6 +45,18 @@ export interface SpendTotals {
   totalCalls: number;
 }
 
+export interface DailySpend {
+  day: string; // YYYY-MM-DD
+  costUsd: number;
+  calls: number;
+}
+
+// Conversión aproximada USD → EUR (OpenAI factura en USD). Ajusta este valor
+// si el cambio se mueve mucho; es solo para mostrar el gasto en euros.
+export const EUR_PER_USD = 0.92;
+
+export const usdToEur = (usd: number) => (usd || 0) * EUR_PER_USD;
+
 /** Calcula el coste en USD de una llamada a gpt-image-1. */
 export const computeCostUsd = (
   usage: OpenAIImageUsage | null | undefined,
@@ -113,13 +125,22 @@ export const recordSpend = async (
   }
 };
 
-/** Obtiene el total de gasto global acumulado. */
-export const getSpendTotals = async (): Promise<SpendTotals | null> => {
+/** Obtiene el total de gasto global acumulado (histórico completo). */
+export const getSpendTotals = async (): Promise<SpendTotals | null> => getSpendStats(null);
+
+/**
+ * Total y nº de llamadas desde hace `sinceDays` días. `null` = histórico completo.
+ */
+export const getSpendStats = async (sinceDays: number | null): Promise<SpendTotals | null> => {
   if (!supabase) return null;
   try {
-    const { data, error } = await supabase.rpc('get_openai_spend_total');
+    const since =
+      sinceDays && sinceDays > 0
+        ? new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString()
+        : null;
+    const { data, error } = await supabase.rpc('get_openai_spend', { p_since: since });
     if (error) {
-      console.warn('No se pudo obtener el total de gasto:', error.message);
+      console.warn('No se pudo obtener el gasto:', error.message);
       return null;
     }
     const row = Array.isArray(data) ? data[0] : data;
@@ -129,7 +150,27 @@ export const getSpendTotals = async (): Promise<SpendTotals | null> => {
       totalCalls: Number(row.total_calls) || 0,
     };
   } catch (e) {
-    console.warn('Error obteniendo el total de gasto:', e);
+    console.warn('Error obteniendo el gasto:', e);
     return null;
+  }
+};
+
+/** Desglose de gasto por día (últimos `days` días). */
+export const getSpendDaily = async (days: number): Promise<DailySpend[]> => {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await supabase.rpc('get_openai_spend_daily', { p_days: days });
+    if (error) {
+      console.warn('No se pudo obtener el histórico diario:', error.message);
+      return [];
+    }
+    return (data || []).map((r: any) => ({
+      day: r.day,
+      costUsd: Number(r.cost_usd) || 0,
+      calls: Number(r.calls) || 0,
+    }));
+  } catch (e) {
+    console.warn('Error obteniendo el histórico diario:', e);
+    return [];
   }
 };
