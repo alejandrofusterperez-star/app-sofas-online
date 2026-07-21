@@ -7,6 +7,7 @@ import { processSofaImage } from './services/openaiService';
 import { Login } from './components/Login';
 import { ResultCard } from './components/ResultCard';
 import { WhatsNew } from './components/WhatsNew';
+import { SpendCounter } from './components/SpendCounter';
 
 // Cambia esta clave cada vez que anuncies una novedad para volver a mostrar el modal.
 const WHATS_NEW_KEY = 'oksofas_whatsnew_telas_v1';
@@ -32,6 +33,7 @@ const App: React.FC = () => {
   const [results, setResults] = useState<GenerationResult[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [spendReloadToken, setSpendReloadToken] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,23 +58,26 @@ const App: React.FC = () => {
 
     try {
       const promises = [
-        processSofaImage(baseImage, mimeType, config, mode),
+        processSofaImage(baseImage, mimeType, config, mode, currentUser),
         processSofaImage(baseImage, mimeType, {
           ...config,
           lighting: mode === AppMode.INTEGRATE ? Lighting.WARM : config.lighting,
           style: mode === AppMode.INTEGRATE ? InteriorStyle.SCANDINAVIAN : config.style
-        }, mode),
+        }, mode, currentUser),
         processSofaImage(baseImage, mimeType, {
           ...config,
           wallColor: mode === AppMode.INTEGRATE ? 'Gris Suave' : config.wallColor,
           flooring: mode === AppMode.INTEGRATE ? 'Nogal Oscuro' : config.flooring
-        }, mode),
+        }, mode, currentUser),
       ];
 
       const responses = await Promise.all(promises);
 
+      // Refresca el contador de gasto global tras registrar las llamadas.
+      setSpendReloadToken((t) => t + 1);
+
       const validResults: GenerationResult[] = responses
-        .filter((res): res is { generatedUrl: string, processedInputUrl: string } => res !== null)
+        .filter((res): res is { generatedUrl: string, processedInputUrl: string, costUsd: number } => res !== null)
         .map((res, idx) => ({
           id: `res-${idx}-${Date.now()}`,
           url: res.generatedUrl,
@@ -117,6 +122,7 @@ const App: React.FC = () => {
 
   return (
     <Layout>
+      {currentUser === 'digency' && <SpendCounter reloadToken={spendReloadToken} />}
       {showWhatsNew && <WhatsNew onClose={closeWhatsNew} />}
       <div className="max-w-7xl mx-auto px-4 py-8 w-full flex-1">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">

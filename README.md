@@ -31,16 +31,26 @@ Para Hostinger, es vital usar el archivo `.htaccess` proporcionado en los flujos
 
 ---
 
+#### 4. Contador de Gasto de OpenAI (`services/spendTracker.ts` + Supabase)
+La app registra el coste de cada llamada a `gpt-image-1` en un proyecto Supabase dedicado (**"sofas"**), acumulando un **total global compartido** entre todos los usuarios y dispositivos.
+- **Cálculo de coste:** exacto a partir del objeto `usage` que devuelve la API (texto $5, imagen entrada $10, imagen salida $40 / 1M tokens). Si no viene `usage`, se estima por imagen según tamaño (calidad `high`).
+- **Backend:** tabla `openai_spend_events` con RLS bloqueado; el frontend solo puede llamar a las RPC `record_openai_spend()` y `get_openai_spend_total()` (SECURITY DEFINER).
+- **UI:** badge flotante (`components/SpendCounter.tsx`) **visible solo para el usuario `digency`**. Se actualiza al generar y mediante sondeo cada 15s para reflejar el gasto de otros usuarios.
+
+---
+
 ## 🏃 Ejecución Local
 
 1. **Instalar dependencias:**
    ```bash
    npm install
    ```
-2. **Configurar Variable de Entorno:**
-   Crea o edita `.env.local` con:
+2. **Configurar Variables de Entorno:**
+   Copia `.env.example` a `.env` y rellena las claves (OpenAI + Supabase). El `.env` ya incluye la config del proyecto Supabase "sofas":
    ```env
-   API_KEY=tu_clave_de_gemini
+   VITE_OPENAI_API_KEY=sk-...
+   VITE_SUPABASE_URL=https://akfcdbttatlpzakmukoe.supabase.co
+   VITE_SUPABASE_ANON_KEY=sb_publishable_...
    ```
 3. **Iniciar Servidor Dev:**
    ```bash

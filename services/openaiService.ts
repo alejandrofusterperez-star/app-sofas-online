@@ -1,5 +1,6 @@
 
 import { VisualizationConfig, AppMode } from "../types";
+import { recordSpend } from "./spendTracker";
 
 const OPENAI_IMAGE_EDIT_URL = "https://api.openai.com/v1/images/edits";
 
@@ -7,8 +8,9 @@ export const processSofaImage = async (
   base64Image: string,
   mimeType: string,
   config: VisualizationConfig,
-  mode: AppMode
-): Promise<{ generatedUrl: string, processedInputUrl: string } | null> => {
+  mode: AppMode,
+  userName: string = 'desconocido'
+): Promise<{ generatedUrl: string, processedInputUrl: string, costUsd: number } | null> => {
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
   if (!apiKey) {
     console.error("VITE_OPENAI_API_KEY no encontrada. Configúrala en .env.local (VITE_OPENAI_API_KEY=sk-...).");
@@ -256,9 +258,25 @@ export const processSofaImage = async (
     const b64 = data?.data?.[0]?.b64_json;
 
     if (b64) {
+      // Registra el coste de esta llamada en el contador global (tolerante a fallos).
+      let costUsd = 0;
+      try {
+        const { costUsd: c } = await recordSpend({
+          userName,
+          model: modelName,
+          size,
+          quality: 'high',
+          usage: data?.usage ?? null,
+        });
+        costUsd = c;
+      } catch (e) {
+        console.warn('No se pudo registrar el gasto de la llamada:', e);
+      }
+
       return {
         generatedUrl: `data:image/png;base64,${b64}`,
         processedInputUrl: processedBase64,
+        costUsd,
       };
     }
 
