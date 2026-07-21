@@ -11,27 +11,12 @@ interface StudioModeProps {
   onGenerated?: () => void;
 }
 
-const SOFA_COLORS = [
-  { name: 'Crema Pinterest', value: '#F3E5AB' },
-  { name: 'Beige Lino', value: '#E3D9C6' },
-  { name: 'Taupe', value: '#8B8589' },
-  { name: 'Verde Salvia', value: '#8A9A5B' },
-  { name: 'Gris Antracita', value: '#374151' },
-  { name: 'Cuero Natural', value: '#92400E' },
-  { name: 'Mostaza Tierra', value: '#D97706' },
-  { name: 'Rosa Arcilla', value: '#D4A5A5' },
-  { name: 'Verde OK', value: '#74AE2C' },
-  { name: 'Azul Real', value: '#1E3A8A' },
-  { name: 'Burdeos', value: '#7F1D1D' },
-];
-
 const STYLES = Object.values(InteriorStyle);
-const STEPS = ['Modelo', 'Acabado', 'Escena'];
+const STEPS = ['Modelo', 'Tela', 'Escena'];
 
 export const StudioMode: React.FC<StudioModeProps> = ({ models, fabrics, userName, onGenerated }) => {
   const [step, setStep] = useState(0);
   const [model, setModel] = useState<SofaModel | null>(null);
-  const [color, setColor] = useState<string>('Beige Lino');
   const [openFabricId, setOpenFabricId] = useState<string | null>(null);
   const [textureColorId, setTextureColorId] = useState<string | null>(null);
   const [environment, setEnvironment] = useState<'salon' | 'estudio'>('salon');
@@ -51,7 +36,7 @@ export const StudioMode: React.FC<StudioModeProps> = ({ models, fabrics, userNam
   );
   const activeFabric = fabrics.find((f) => f.id === openFabricId) || null;
 
-  const canContinue = step === 0 ? !!model : true;
+  const canContinue = step === 0 ? !!model : step === 1 ? !!texture : true;
 
   const handleGenerate = async () => {
     if (!model?.image_url) {
@@ -69,15 +54,16 @@ export const StudioMode: React.FC<StudioModeProps> = ({ models, fabrics, userNam
         wallColor: '#F9F9F7',
         lighting: Lighting.NATURAL,
         flooring: 'Roble Claro',
-        targetSofaColor: color,
+        // La tela define COLOR + TEXTURA (sin paleta). targetSofaColor solo etiqueta.
+        targetSofaColor: texture ? `${texture.fabricName} ${texture.c.name}` : undefined,
         aspectRatio,
         numImages,
         fastMode,
-        // Textura opcional (biblioteca de telas), como referencia de material.
         changeFabric: !!texture,
         targetFabric: texture?.fabricName,
         fabricReferenceImageUrl: texture?.c.image_url || undefined,
         selectedFabricColorId: texture?.c.id,
+        useFabricColor: true,
       };
 
       const mode = environment === 'salon' ? AppMode.INTEGRATE : AppMode.COLOR_CHANGE;
@@ -156,7 +142,7 @@ export const StudioMode: React.FC<StudioModeProps> = ({ models, fabrics, userNam
         </div>
         <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Componiendo en estudio...</h3>
         <p className="text-slate-400 font-medium mt-3 max-w-sm">
-          Aplicando tu modelo, color{texture ? ' y textura' : ''} en {environment === 'salon' ? 'un salón premium' : 'estudio neutro'}.
+          Aplicando tu modelo con la tela elegida en {environment === 'salon' ? 'un salón premium' : 'estudio neutro'}.
         </p>
       </div>
     );
@@ -228,32 +214,12 @@ export const StudioMode: React.FC<StudioModeProps> = ({ models, fabrics, userNam
           </div>
         )}
 
-        {/* Paso 2: Acabado (color + textura) */}
+        {/* Paso 2: Tela (color + textura de la muestra) */}
         {step === 1 && (
           <div className="space-y-8">
             <div>
-              <h3 className="text-lg font-black text-slate-800 mb-1">Color del tapizado</h3>
-              <p className="text-sm text-slate-400 mb-5">El color que quieres aplicar al modelo.</p>
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 sm:gap-4">
-                {SOFA_COLORS.map((c) => (
-                  <button key={c.name} title={c.name} onClick={() => setColor(c.name)} className="flex flex-col items-center gap-1.5 group">
-                    <div
-                      className={`w-full aspect-square rounded-2xl border-2 transition-all ${
-                        color === c.name ? 'border-[#74AE2C] ring-4 ring-[#74AE2C]/10 scale-105' : 'border-slate-100 group-hover:border-slate-300'
-                      }`}
-                      style={{ backgroundColor: c.value }}
-                    />
-                    <span className={`text-[10px] font-bold text-center leading-tight ${color === c.name ? 'text-[#74AE2C]' : 'text-slate-400'}`}>
-                      {c.name}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="border-t border-slate-100 pt-6">
-              <h3 className="text-lg font-black text-slate-800 mb-1">Textura de la tela (opcional)</h3>
-              <p className="text-sm text-slate-400 mb-5">Copia solo el material de una tela propia. El color será el de arriba.</p>
+              <h3 className="text-lg font-black text-slate-800 mb-1">Elige la tela</h3>
+              <p className="text-sm text-slate-400 mb-5">Se usará su <span className="font-bold text-slate-600">color y su textura</span> tal cual, sin colores predeterminados.</p>
               {fabrics.length === 0 ? (
                 <p className="text-xs text-slate-400">No hay telas todavía. Créalas en la pestaña "Telas".</p>
               ) : (
@@ -293,7 +259,7 @@ export const StudioMode: React.FC<StudioModeProps> = ({ models, fabrics, userNam
                   )}
                   {texture && (
                     <div className="flex items-center gap-2 text-[11px] font-bold text-[#74AE2C] bg-[#74AE2C]/5 rounded-xl px-3 py-2">
-                      <span>Textura: {texture.fabricName} · {texture.c.name}</span>
+                      <span>Tela: {texture.fabricName} · {texture.c.name}</span>
                       <button onClick={() => setTextureColorId(null)} className="ml-auto text-slate-400 hover:text-red-500">quitar</button>
                     </div>
                   )}

@@ -42,6 +42,9 @@ export interface VisualizationConfig {
   // Biblioteca de telas (admin): cuando se selecciona una tela+color de la biblioteca,
   // se guarda la URL de la imagen del swatch para enviarla como referencia a OpenAI.
   fabricReferenceImageUrl?: string;
+  // Modo Estudio: si true, la muestra de tela define COLOR + TEXTURA (sin paleta).
+  // Si false/undefined, la muestra aporta solo textura y el color viene de la paleta.
+  useFabricColor?: boolean;
   // Id del color de tela seleccionado de la biblioteca (para resaltar la selección en la UI).
   selectedFabricColorId?: string;
 }

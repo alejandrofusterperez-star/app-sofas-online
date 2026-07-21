@@ -35,24 +35,35 @@ export const processSofaImage = async (
     console.warn("Could not letterbox the input image, using original", e);
   }
 
-  // Referencia de TEXTURA (biblioteca de telas). Se puede usar en re-tapizado y en
-  // integración (Modo Estudio). La imagen aporta SOLO el material; el color va aparte.
+  // Referencia de tela (biblioteca). Se usa en re-tapizado e integración (Modo Estudio).
   const changeFabric = !!config.changeFabric;
   const hasFabricReference = changeFabric && !!config.fabricReferenceImageUrl;
-  const fabricReferenceBlock = hasFabricReference
-    ? `IMAGEN DE REFERENCIA DE TEXTURA (CRÍTICO, PRIORIDAD MÁXIMA):
+  // Modo Estudio: la muestra define COLOR + TEXTURA. Si no, solo textura (color = paleta).
+  const useFabricColor = hasFabricReference && !!config.useFabricColor;
+
+  const fabricReferenceBlock = !hasFabricReference
+    ? ''
+    : useFabricColor
+    ? `IMAGEN DE REFERENCIA DE TELA (COLOR + TEXTURA) — EXCEPCIÓN PERMITIDA AL BLOQUEO DEL SOFÁ:
+      - Se adjunta una SEGUNDA imagen: es una MUESTRA (swatch) de la tela "${config.targetFabric}".
+      - RE-TAPIZA el sofá con ESA tela: reproduce EXACTAMENTE 1:1 su COLOR, su tono, su trama, su textura, su relieve y su acabado (brillo/mate). NO inventes otro color.
+      - Es la ÚNICA modificación permitida al sofá: cambia SOLO el tapizado (material + color). Mantén 1:1 la forma, proporciones, costuras/relieve, cojines y patas.
+      - La PRIMERA imagen es el SOFÁ (respeta forma, orientación y estructura). La SEGUNDA es solo la tela de referencia: NO copies su forma ni su encuadre.
+      - El acabado final debe parecer que el sofá está tapizado físicamente con esa tela exacta.`
+    : `IMAGEN DE REFERENCIA DE TEXTURA (solo material) — EXCEPCIÓN PERMITIDA AL BLOQUEO DEL SOFÁ:
       - Se adjunta una SEGUNDA imagen: es una MUESTRA (swatch) de la tela "${config.targetFabric}".
       - ÚSALA SOLO COMO REFERENCIA DE TEXTURA/MATERIAL: copia su trama, tejido, relieve, patrón y acabado (brillo/mate) exactamente.
-      - NO copies el COLOR de la muestra. El color del tapizado es el color indicado para el sofá ("${config.targetSofaColor}").
-      - Es decir: aplica la TEXTURA de la muestra pero TEÑIDA con el color elegido, como si esa misma tela existiera en ese color.
-      - La PRIMERA imagen es el SOFÁ (respeta su forma, orientación y estructura). La SEGUNDA es solo la textura de referencia: NO copies su forma ni su encuadre.
-      - El acabado final debe parecer que el sofá está tapizado con ese material real, en el color indicado.`
-    : '';
+      - NO copies el COLOR de la muestra. El color del tapizado es el indicado para el sofá ("${config.targetSofaColor}").
+      - Aplica la TEXTURA de la muestra pero TEÑIDA con ese color, como si esa misma tela existiera en ese color. Cambia SOLO el tapizado; mantén forma, patas y estructura 1:1.
+      - La PRIMERA imagen es el SOFÁ; la SEGUNDA es solo la textura de referencia: NO copies su forma ni su encuadre.`;
 
-  // Solo para digency: cambio de color del sofá DENTRO del modo integrar.
-  const wantsIntegrateColor = !!config.integrateColorChange && !!config.targetSofaColor;
+  // Solo para digency: cambio de color del sofá DENTRO del modo integrar (con paleta).
+  // Si la tela ya define el color (useFabricColor) o hay referencia, no aplicamos paleta aquí.
+  const wantsIntegrateColor = !hasFabricReference && !!config.integrateColorChange && !!config.targetSofaColor;
 
-  const integrateColorRule = wantsIntegrateColor
+  const integrateColorRule = hasFabricReference
+    ? '' // El re-tapizado lo dicta el bloque de referencia de tela.
+    : wantsIntegrateColor
     ? `CAMBIO DE COLOR DEL SOFÁ (ÚNICA EXCEPCIÓN PERMITIDA AL BLOQUEO):
       - Cambia ÚNICAMENTE el TINTE/COLOR del tapizado del sofá a: ${config.targetSofaColor}.
       - Aplica el nuevo tono de forma uniforme, realista y premium a TODO el tapizado.
@@ -95,7 +106,7 @@ export const processSofaImage = async (
       INTEGRACIÓN REALISTA (SIN TOCAR EL SOFÁ):
       - Ajusta SOLO el entorno: crea un salón coherente alrededor del sofá.
       - Añade sombra de contacto realista debajo de las patas/base SIN tapar ni deformar el sofá.
-      - Iluminación: solo ajustes suaves para coherencia ambiental${wantsIntegrateColor ? '.' : ', sin cambiar color real del tapizado.'}
+      - Iluminación: solo ajustes suaves para coherencia ambiental${(wantsIntegrateColor || hasFabricReference) ? '.' : ', sin cambiar color real del tapizado.'}
 
       AMBIENTE — SALÓN COMPLETO Y CON SENTIDO (FONDO SOLO):
       - OBJETIVO DE ESCENA: genera un SALÓN REAL Y HABITADO, completamente amueblado y coherente. NO un sofá flotando en un fondo vacío o en un estudio sin contexto.
@@ -198,9 +209,12 @@ export const processSofaImage = async (
   } else {
     // Cambios independientes: el usuario puede pedir solo color, solo tela, o ambos.
     // (changeFabric/hasFabricReference/fabricReferenceBlock ya se calcularon arriba.)
-    const changeColor = config.changeColor !== false; // por defecto true
+    // Si la tela define el color (Modo Estudio), no aplicamos color de paleta.
+    const changeColor = useFabricColor ? false : config.changeColor !== false;
 
-    const colorBlock = changeColor
+    const colorBlock = useFabricColor
+      ? '' // El color lo define la muestra de tela (bloque de referencia).
+      : changeColor
       ? `COLOR (CAMBIAR):
       - Cambia el tinte del tapizado a: ${config.targetSofaColor || 'Azul Marino'}.
       - El tono debe ser uniforme, realista y premium.
