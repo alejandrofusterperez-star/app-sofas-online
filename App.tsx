@@ -31,7 +31,8 @@ const App: React.FC = () => {
     changeFabric: false,
     targetFabric: 'Chenilla',
     addDecor: true,
-    numImages: 3
+    numImages: 3,
+    fastMode: false
   });
   const [results, setResults] = useState<GenerationResult[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);

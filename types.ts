@@ -35,6 +35,8 @@ export interface VisualizationConfig {
   aspectRatio?: string;
   // Número de imágenes a generar (1, 2 o 3).
   numImages?: number;
+  // Modo rápido: usa calidad 'medium' (más rápido y barato) en vez de 'high'.
+  fastMode?: boolean;
   // Solo para el usuario digency: permite cambiar el color del sofá dentro del modo INTEGRAR.
   integrateColorChange?: boolean;
   // Biblioteca de telas (admin): cuando se selecciona una tela+color de la biblioteca,

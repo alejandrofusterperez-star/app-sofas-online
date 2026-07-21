@@ -241,7 +241,9 @@ export const processSofaImage = async (
 
   try {
     const modelName = 'gpt-image-1';
-    console.log(`Llamando a OpenAI con modelo: ${modelName} (size: ${size})`);
+    // Modo rápido -> calidad 'medium' (más rápido y barato). Por defecto 'high' (premium).
+    const quality = config.fastMode ? 'medium' : 'high';
+    console.log(`Llamando a OpenAI con modelo: ${modelName} (size: ${size}, quality: ${quality})`);
 
     // Convert the (possibly padded) data URL into a PNG Blob for the multipart upload
     const imageBlob = await dataUrlToBlob(processedBase64, mimeType);
@@ -269,7 +271,7 @@ export const processSofaImage = async (
     }
     formData.append('prompt', prompt);
     formData.append('size', size);
-    formData.append('quality', 'high');
+    formData.append('quality', quality);
     // input_fidelity=high preserva al máximo el producto original (sofá/colchón/etiqueta)
     formData.append('input_fidelity', 'high');
     formData.append('n', '1');
@@ -299,7 +301,7 @@ export const processSofaImage = async (
           userName,
           model: modelName,
           size,
-          quality: 'high',
+          quality,
           usage: data?.usage ?? null,
         });
         costUsd = c;
