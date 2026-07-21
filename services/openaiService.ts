@@ -185,6 +185,17 @@ export const processSofaImage = async (
     // Cambios independientes: el usuario puede pedir solo color, solo tela, o ambos.
     const changeColor = config.changeColor !== false; // por defecto true
     const changeFabric = !!config.changeFabric;
+    // ¿Hay una muestra (swatch) de la biblioteca de telas que se enviará como 2ª imagen?
+    const hasFabricReference = changeFabric && !!config.fabricReferenceImageUrl;
+
+    const fabricReferenceBlock = hasFabricReference
+      ? `IMAGEN DE REFERENCIA DE TELA (CRÍTICO, PRIORIDAD MÁXIMA):
+      - Se adjunta una SEGUNDA imagen: es una MUESTRA (swatch) de la tela "${config.targetFabric}" en color "${config.targetSofaColor}".
+      - Reproduce EXACTAMENTE esa tela sobre el tapizado del sofá: su trama, textura, relieve, brillo/mate y COLOR real de la muestra.
+      - La PRIMERA imagen es el SOFÁ a re-tapizar (respeta su forma, orientación y estructura).
+      - La SEGUNDA imagen es SOLO la tela de referencia: NO copies su forma ni su encuadre, únicamente el material y el color.
+      - El acabado final debe parecer que el sofá está tapizado físicamente con la tela de la muestra.`
+      : '';
 
     const colorBlock = changeColor
       ? `COLOR (CAMBIAR):
@@ -216,7 +227,7 @@ export const processSofaImage = async (
       ${colorBlock}
 
       ${fabricBlock}
-
+      ${fabricReferenceBlock ? '\n' + fabricReferenceBlock + '\n' : ''}
       ENTORNO: Presentación de catálogo en estudio neutro minimalista, fondo limpio, para que el sofá sea el protagonista absoluto.
 
       VERIFICACIÓN FINAL: el sofá debe ser el MISMO modelo, misma forma y orientación; solo deben verse los cambios solicitados de color y/o material.
@@ -230,9 +241,27 @@ export const processSofaImage = async (
     // Convert the (possibly padded) data URL into a PNG Blob for the multipart upload
     const imageBlob = await dataUrlToBlob(processedBase64, mimeType);
 
+    // Si hay una tela de referencia (biblioteca), la descargamos para enviarla como 2ª imagen.
+    let fabricRefBlob: Blob | null = null;
+    if (config.changeFabric && config.fabricReferenceImageUrl) {
+      try {
+        const refRes = await fetch(config.fabricReferenceImageUrl);
+        if (refRes.ok) fabricRefBlob = await refRes.blob();
+        else console.warn('No se pudo descargar la imagen de la tela de referencia:', refRes.status);
+      } catch (e) {
+        console.warn('Error descargando la tela de referencia:', e);
+      }
+    }
+
     const formData = new FormData();
     formData.append('model', modelName);
-    formData.append('image', imageBlob, 'sofa.png');
+    if (fabricRefBlob) {
+      // gpt-image-1 acepta varias imágenes con el campo image[]: 1ª el sofá, 2ª la tela.
+      formData.append('image[]', imageBlob, 'sofa.png');
+      formData.append('image[]', fabricRefBlob, 'fabric.png');
+    } else {
+      formData.append('image', imageBlob, 'sofa.png');
+    }
     formData.append('prompt', prompt);
     formData.append('size', size);
     formData.append('quality', 'high');

@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { InteriorStyle, Lighting, VisualizationConfig, AppMode } from '../types';
+import React, { useState } from 'react';
+import { InteriorStyle, Lighting, VisualizationConfig, AppMode, Fabric } from '../types';
 
 interface StyleSelectorProps {
   config: VisualizationConfig;
@@ -8,6 +8,9 @@ interface StyleSelectorProps {
   disabled?: boolean;
   mode: AppMode;
   allowColorChange?: boolean;
+  // Biblioteca de telas (solo se usa cuando isAdmin === true).
+  fabrics?: Fabric[];
+  isAdmin?: boolean;
 }
 
 const styles = Object.values(InteriorStyle);
@@ -50,7 +53,8 @@ const sofaColors = [
   { name: 'Burdeos', value: '#7F1D1D' },
 ];
 
-export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, disabled, mode, allowColorChange }) => {
+export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, disabled, mode, allowColorChange, fabrics = [], isAdmin }) => {
+  const [openFabricId, setOpenFabricId] = useState<string | null>(null);
   const commonHeader = (title: string) => (
     <label className="block text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
       <div className="w-1.5 h-1.5 bg-[#74AE2C] rounded-full"></div>
@@ -83,6 +87,117 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
     </div>
   );
 
+
+  // Selector de la biblioteca de telas (admin): elige tela → color con imagen de referencia.
+  const renderFabricLibrary = () => {
+    if (!fabrics.length) {
+      return (
+        <p className="text-xs text-slate-400 mt-2 font-medium">
+          No hay telas en la biblioteca todavía. Créalas en el panel "Telas".
+        </p>
+      );
+    }
+    const activeFabric = fabrics.find((f) => f.id === openFabricId) || null;
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-2">
+          {fabrics.map((fabric) => {
+            const selectedHere = fabric.colors.some((c) => c.id === config.selectedFabricColorId);
+            return (
+              <button
+                key={fabric.id}
+                onClick={() => setOpenFabricId(openFabricId === fabric.id ? null : fabric.id)}
+                disabled={disabled}
+                className={`px-3 py-2.5 text-xs font-bold rounded-xl border transition-all ${
+                  openFabricId === fabric.id || selectedHere
+                    ? 'bg-[#74AE2C] border-[#74AE2C] text-white shadow-lg shadow-[#74AE2C]/20'
+                    : 'bg-white border-slate-100 text-slate-500 hover:border-[#74AE2C]/30'
+                }`}
+              >
+                {fabric.name}
+                {selectedHere ? ' ✓' : ''}
+              </button>
+            );
+          })}
+        </div>
+
+        {activeFabric && (
+          <div className="pt-1">
+            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-3">
+              Colores de {activeFabric.name}
+            </p>
+            {activeFabric.colors.length === 0 ? (
+              <p className="text-xs text-slate-400">Esta tela no tiene colores todavía.</p>
+            ) : (
+              <div className="grid grid-cols-4 gap-3">
+                {activeFabric.colors.map((color) => (
+                  <button
+                    key={color.id}
+                    title={color.name}
+                    disabled={disabled}
+                    onClick={() =>
+                      onChange({
+                        ...config,
+                        targetFabric: activeFabric.name,
+                        targetSofaColor: color.name,
+                        fabricReferenceImageUrl: color.image_url || undefined,
+                        selectedFabricColorId: color.id,
+                      })
+                    }
+                    className="flex flex-col items-center gap-1.5 group outline-none"
+                  >
+                    <div
+                      className={`w-full aspect-square rounded-2xl overflow-hidden border-2 transition-all duration-300 bg-slate-50 ${
+                        config.selectedFabricColorId === color.id
+                          ? 'border-[#74AE2C] ring-4 ring-[#74AE2C]/10 scale-105'
+                          : 'border-slate-100 group-hover:border-slate-300'
+                      }`}
+                    >
+                      {color.image_url ? (
+                        <img src={color.image_url} alt={color.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[9px] text-slate-300">
+                          sin img
+                        </div>
+                      )}
+                    </div>
+                    <span
+                      className={`text-[10px] font-bold text-center leading-tight transition-colors ${
+                        config.selectedFabricColorId === color.id ? 'text-[#74AE2C]' : 'text-slate-400'
+                      }`}
+                    >
+                      {color.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {config.selectedFabricColorId && (
+          <div className="flex items-center gap-2 text-[11px] font-bold text-[#74AE2C] bg-[#74AE2C]/5 rounded-xl px-3 py-2">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Tela de referencia seleccionada: {config.targetFabric} · {config.targetSofaColor}
+            <button
+              onClick={() =>
+                onChange({
+                  ...config,
+                  fabricReferenceImageUrl: undefined,
+                  selectedFabricColorId: undefined,
+                })
+              }
+              className="ml-auto text-slate-400 hover:text-red-500"
+            >
+              quitar
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   if (mode === AppMode.COLOR_CHANGE) {
     return (
@@ -141,22 +256,26 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
 
         {config.changeFabric && (
           <div className="border-t border-slate-100 pt-6">
-            {commonHeader('Elige la nueva tela')}
-            <div className="grid grid-cols-2 gap-2">
-              {fabricTypes.map((fabric) => (
-                <button
-                  key={fabric}
-                  onClick={() => onChange({ ...config, targetFabric: fabric })}
-                  disabled={disabled}
-                  className={`px-3 py-2.5 text-xs font-bold rounded-xl border transition-all ${config.targetFabric === fabric
-                    ? 'bg-[#74AE2C] border-[#74AE2C] text-white shadow-lg shadow-[#74AE2C]/20'
-                    : 'bg-white border-slate-100 text-slate-500 hover:border-[#74AE2C]/30'
-                    }`}
-                >
-                  {fabric}
-                </button>
-              ))}
-            </div>
+            {commonHeader(isAdmin ? 'Elige la tela de la biblioteca' : 'Elige la nueva tela')}
+            {isAdmin ? (
+              renderFabricLibrary()
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {fabricTypes.map((fabric) => (
+                  <button
+                    key={fabric}
+                    onClick={() => onChange({ ...config, targetFabric: fabric })}
+                    disabled={disabled}
+                    className={`px-3 py-2.5 text-xs font-bold rounded-xl border transition-all ${config.targetFabric === fabric
+                      ? 'bg-[#74AE2C] border-[#74AE2C] text-white shadow-lg shadow-[#74AE2C]/20'
+                      : 'bg-white border-slate-100 text-slate-500 hover:border-[#74AE2C]/30'
+                      }`}
+                  >
+                    {fabric}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

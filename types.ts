@@ -35,6 +35,28 @@ export interface VisualizationConfig {
   aspectRatio?: string;
   // Solo para el usuario digency: permite cambiar el color del sofá dentro del modo INTEGRAR.
   integrateColorChange?: boolean;
+  // Biblioteca de telas (admin): cuando se selecciona una tela+color de la biblioteca,
+  // se guarda la URL de la imagen del swatch para enviarla como referencia a OpenAI.
+  fabricReferenceImageUrl?: string;
+  // Id del color de tela seleccionado de la biblioteca (para resaltar la selección en la UI).
+  selectedFabricColorId?: string;
+}
+
+// ─── Biblioteca de telas (gestionada por el admin) ───────────────────────────
+export interface FabricColor {
+  id: string;
+  fabric_id: string;
+  name: string;
+  image_path?: string | null;
+  image_url?: string | null;
+  created_at?: string;
+}
+
+export interface Fabric {
+  id: string;
+  name: string;
+  created_at?: string;
+  colors: FabricColor[];
 }
 
 export interface GenerationResult {

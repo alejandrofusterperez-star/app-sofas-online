@@ -1,13 +1,15 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Layout } from './components/Layout';
 import { StyleSelector } from './components/StyleSelector';
-import { InteriorStyle, Lighting, VisualizationConfig, GenerationResult, AppMode } from './types';
+import { InteriorStyle, Lighting, VisualizationConfig, GenerationResult, AppMode, Fabric } from './types';
 import { processSofaImage } from './services/openaiService';
+import { listFabrics } from './services/fabricsService';
 import { Login } from './components/Login';
 import { ResultCard } from './components/ResultCard';
 import { WhatsNew } from './components/WhatsNew';
 import { SpendCounter } from './components/SpendCounter';
+import { FabricsAdmin } from './components/FabricsAdmin';
 
 // Cambia esta clave cada vez que anuncies una novedad para volver a mostrar el modal.
 const WHATS_NEW_KEY = 'oksofas_whatsnew_telas_v1';
@@ -34,7 +36,24 @@ const App: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [spendReloadToken, setSpendReloadToken] = useState(0);
+  const [fabrics, setFabrics] = useState<Fabric[]>([]);
+  const [adminView, setAdminView] = useState<'generator' | 'fabrics'>('generator');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isAdmin = currentUser === 'digency';
+
+  const reloadFabrics = async () => {
+    const data = await listFabrics();
+    setFabrics(data);
+  };
+
+  // Carga la biblioteca de telas cuando entra el admin.
+  useEffect(() => {
+    if (isAuthenticated && isAdmin) {
+      reloadFabrics();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, isAdmin]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -122,8 +141,34 @@ const App: React.FC = () => {
 
   return (
     <Layout>
-      {currentUser === 'digency' && <SpendCounter reloadToken={spendReloadToken} />}
+      {isAdmin && <SpendCounter reloadToken={spendReloadToken} />}
       {showWhatsNew && <WhatsNew onClose={closeWhatsNew} />}
+
+      {/* Navegación admin: alterna entre el generador y la biblioteca de telas */}
+      {isAdmin && (
+        <div className="max-w-7xl mx-auto px-4 pt-6 w-full">
+          <div className="inline-flex bg-white p-1.5 rounded-2xl border border-slate-100 shadow-sm">
+            <button
+              onClick={() => setAdminView('generator')}
+              className={`px-5 py-2.5 text-xs font-extrabold rounded-xl uppercase tracking-widest transition-all ${adminView === 'generator' ? 'bg-[#74AE2C] text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+            >
+              Generador
+            </button>
+            <button
+              onClick={() => setAdminView('fabrics')}
+              className={`px-5 py-2.5 text-xs font-extrabold rounded-xl uppercase tracking-widest transition-all ${adminView === 'fabrics' ? 'bg-[#74AE2C] text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+            >
+              Telas
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isAdmin && adminView === 'fabrics' ? (
+        <div className="max-w-7xl mx-auto px-4 py-8 w-full flex-1">
+          <FabricsAdmin onChanged={reloadFabrics} />
+        </div>
+      ) : (
       <div className="max-w-7xl mx-auto px-4 py-8 w-full flex-1">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
 
@@ -187,7 +232,7 @@ const App: React.FC = () => {
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
               </div>
 
-              <StyleSelector config={config} onChange={setConfig} disabled={isGenerating} mode={mode} allowColorChange={currentUser === 'digency'} />
+              <StyleSelector config={config} onChange={setConfig} disabled={isGenerating} mode={mode} allowColorChange={isAdmin} fabrics={fabrics} isAdmin={isAdmin} />
 
               <button
                 disabled={!baseImage || isGenerating}
@@ -304,6 +349,7 @@ const App: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
     </Layout>
   );
 };
