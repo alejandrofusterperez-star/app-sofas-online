@@ -71,7 +71,7 @@ export const SpendCounter: React.FC<SpendCounterProps> = ({ reloadToken }) => {
     <div className="fixed bottom-5 right-5 z-[60] select-none">
       {/* Panel expandido */}
       {open && (
-        <div className="mb-3 w-[330px] bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <div className="mb-3 w-[calc(100vw-2.5rem)] max-w-[330px] bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
           <div className="bg-slate-900 px-5 py-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-[#74AE2C]/20 flex items-center justify-center">

@@ -35,6 +35,20 @@ export const processSofaImage = async (
     console.warn("Could not letterbox the input image, using original", e);
   }
 
+  // Referencia de TEXTURA (biblioteca de telas). Se puede usar en re-tapizado y en
+  // integración (Modo Estudio). La imagen aporta SOLO el material; el color va aparte.
+  const changeFabric = !!config.changeFabric;
+  const hasFabricReference = changeFabric && !!config.fabricReferenceImageUrl;
+  const fabricReferenceBlock = hasFabricReference
+    ? `IMAGEN DE REFERENCIA DE TEXTURA (CRÍTICO, PRIORIDAD MÁXIMA):
+      - Se adjunta una SEGUNDA imagen: es una MUESTRA (swatch) de la tela "${config.targetFabric}".
+      - ÚSALA SOLO COMO REFERENCIA DE TEXTURA/MATERIAL: copia su trama, tejido, relieve, patrón y acabado (brillo/mate) exactamente.
+      - NO copies el COLOR de la muestra. El color del tapizado es el color indicado para el sofá ("${config.targetSofaColor}").
+      - Es decir: aplica la TEXTURA de la muestra pero TEÑIDA con el color elegido, como si esa misma tela existiera en ese color.
+      - La PRIMERA imagen es el SOFÁ (respeta su forma, orientación y estructura). La SEGUNDA es solo la textura de referencia: NO copies su forma ni su encuadre.
+      - El acabado final debe parecer que el sofá está tapizado con ese material real, en el color indicado.`
+    : '';
+
   // Solo para digency: cambio de color del sofá DENTRO del modo integrar.
   const wantsIntegrateColor = !!config.integrateColorChange && !!config.targetSofaColor;
 
@@ -77,7 +91,7 @@ export const processSofaImage = async (
       - PROHIBIDO colocar cualquier objeto que tape, cruce, se apoye o pase por delante ocultando el sofá. La decoración va SIEMPRE alrededor o por delante a baja altura (mesa de centro), nunca tapándolo.
 
       ${integrateColorRule}
-
+      ${hasFabricReference ? '\n' + fabricReferenceBlock + '\n' : ''}
       INTEGRACIÓN REALISTA (SIN TOCAR EL SOFÁ):
       - Ajusta SOLO el entorno: crea un salón coherente alrededor del sofá.
       - Añade sombra de contacto realista debajo de las patas/base SIN tapar ni deformar el sofá.
@@ -183,21 +197,8 @@ export const processSofaImage = async (
     `.trim();
   } else {
     // Cambios independientes: el usuario puede pedir solo color, solo tela, o ambos.
-    const changeFabric = !!config.changeFabric;
-    // ¿Hay una muestra (swatch) de la biblioteca que se enviará como 2ª imagen?
-    // La usamos SOLO como referencia de TEXTURA/MATERIAL; el color lo pone la paleta.
-    const hasFabricReference = changeFabric && !!config.fabricReferenceImageUrl;
+    // (changeFabric/hasFabricReference/fabricReferenceBlock ya se calcularon arriba.)
     const changeColor = config.changeColor !== false; // por defecto true
-
-    const fabricReferenceBlock = hasFabricReference
-      ? `IMAGEN DE REFERENCIA DE TEXTURA (CRÍTICO, PRIORIDAD MÁXIMA):
-      - Se adjunta una SEGUNDA imagen: es una MUESTRA (swatch) de la tela "${config.targetFabric}".
-      - ÚSALA SOLO COMO REFERENCIA DE TEXTURA/MATERIAL: copia su trama, tejido, relieve, patrón y acabado (brillo/mate) exactamente.
-      - NO copies el COLOR de la muestra. El color del tapizado es el indicado arriba en el bloque COLOR ("${config.targetSofaColor}").
-      - Es decir: aplica la TEXTURA de la muestra pero TEÑIDA con el color elegido, como si esa misma tela existiera en ese color.
-      - La PRIMERA imagen es el SOFÁ a re-tapizar (respeta su forma, orientación y estructura). La SEGUNDA es solo la textura de referencia: NO copies su forma ni su encuadre.
-      - El acabado final debe parecer que el sofá está tapizado con ese material real, en el color indicado.`
-      : '';
 
     const colorBlock = changeColor
       ? `COLOR (CAMBIAR):

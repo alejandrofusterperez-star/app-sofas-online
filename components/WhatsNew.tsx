@@ -12,7 +12,7 @@ export const WhatsNew: React.FC<WhatsNewProps> = ({ onClose }) => {
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg bg-white rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-400"
+        className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white rounded-3xl sm:rounded-[2rem] shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-4 duration-400"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Botón cerrar */}
@@ -27,9 +27,9 @@ export const WhatsNew: React.FC<WhatsNewProps> = ({ onClose }) => {
         </button>
 
         {/* Vídeo demostrativo (vertical) */}
-        <div className="bg-[#F8FAF5] border-b border-slate-100 flex justify-center py-6">
+        <div className="bg-[#F8FAF5] border-b border-slate-100 flex justify-center py-4 sm:py-6">
           <video
-            className="h-[320px] w-auto rounded-2xl shadow-lg shadow-slate-300/60 ring-1 ring-slate-200"
+            className="h-[240px] sm:h-[320px] w-auto rounded-2xl shadow-lg shadow-slate-300/60 ring-1 ring-slate-200"
             src="/whats-new-telas.mp4"
             autoPlay
             loop
@@ -39,7 +39,7 @@ export const WhatsNew: React.FC<WhatsNewProps> = ({ onClose }) => {
         </div>
 
         {/* Contenido */}
-        <div className="p-8">
+        <div className="p-6 sm:p-8">
           <div className="inline-flex items-center gap-2 bg-[#74AE2C]/10 text-[#74AE2C] text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full mb-4">
             <span className="w-1.5 h-1.5 bg-[#74AE2C] rounded-full animate-pulse"></span>
             Nuevo módulo

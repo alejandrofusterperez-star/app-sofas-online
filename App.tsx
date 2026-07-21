@@ -2,14 +2,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Layout } from './components/Layout';
 import { StyleSelector } from './components/StyleSelector';
-import { InteriorStyle, Lighting, VisualizationConfig, GenerationResult, AppMode, Fabric } from './types';
+import { InteriorStyle, Lighting, VisualizationConfig, GenerationResult, AppMode, Fabric, SofaModel } from './types';
 import { processSofaImage } from './services/openaiService';
 import { listFabrics } from './services/fabricsService';
+import { listSofaModels } from './services/sofaModelsService';
 import { Login } from './components/Login';
 import { ResultCard } from './components/ResultCard';
 import { WhatsNew } from './components/WhatsNew';
 import { SpendCounter } from './components/SpendCounter';
 import { FabricsAdmin } from './components/FabricsAdmin';
+import { SofaModelsAdmin } from './components/SofaModelsAdmin';
+import { StudioMode } from './components/StudioMode';
 
 // Cambia esta clave cada vez que anuncies una novedad para volver a mostrar el modal.
 const WHATS_NEW_KEY = 'oksofas_whatsnew_telas_v1';
@@ -39,7 +42,8 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [spendReloadToken, setSpendReloadToken] = useState(0);
   const [fabrics, setFabrics] = useState<Fabric[]>([]);
-  const [adminView, setAdminView] = useState<'generator' | 'fabrics'>('generator');
+  const [sofaModels, setSofaModels] = useState<SofaModel[]>([]);
+  const [adminView, setAdminView] = useState<'generator' | 'estudio' | 'fabrics' | 'models'>('generator');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isAdmin = currentUser === 'digency';
@@ -49,10 +53,16 @@ const App: React.FC = () => {
     setFabrics(data);
   };
 
-  // Carga la biblioteca de telas cuando entra el admin.
+  const reloadModels = async () => {
+    const data = await listSofaModels();
+    setSofaModels(data);
+  };
+
+  // Carga las bibliotecas (telas + modelos) cuando entra el admin.
   useEffect(() => {
     if (isAuthenticated && isAdmin) {
       reloadFabrics();
+      reloadModels();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, isAdmin]);
@@ -152,55 +162,70 @@ const App: React.FC = () => {
       {isAdmin && <SpendCounter reloadToken={spendReloadToken} />}
       {showWhatsNew && <WhatsNew onClose={closeWhatsNew} />}
 
-      {/* Navegación admin: alterna entre el generador y la biblioteca de telas */}
+      {/* Navegación admin: generador, modo estudio y bibliotecas */}
       {isAdmin && (
         <div className="max-w-7xl mx-auto px-4 pt-6 w-full">
-          <div className="inline-flex bg-white p-1.5 rounded-2xl border border-slate-100 shadow-sm">
-            <button
-              onClick={() => setAdminView('generator')}
-              className={`px-5 py-2.5 text-xs font-extrabold rounded-xl uppercase tracking-widest transition-all ${adminView === 'generator' ? 'bg-[#74AE2C] text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
-            >
-              Generador
-            </button>
-            <button
-              onClick={() => setAdminView('fabrics')}
-              className={`px-5 py-2.5 text-xs font-extrabold rounded-xl uppercase tracking-widest transition-all ${adminView === 'fabrics' ? 'bg-[#74AE2C] text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
-            >
-              Telas
-            </button>
+          <div className="flex gap-1 bg-white p-1.5 rounded-2xl border border-slate-100 shadow-sm overflow-x-auto">
+            {([
+              { key: 'generator', label: 'Generador' },
+              { key: 'estudio', label: 'Estudio' },
+              { key: 'fabrics', label: 'Telas' },
+              { key: 'models', label: 'Modelos' },
+            ] as const).map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setAdminView(t.key)}
+                className={`px-4 sm:px-5 py-2.5 text-xs font-extrabold rounded-xl uppercase tracking-widest transition-all whitespace-nowrap ${adminView === t.key ? 'bg-[#74AE2C] text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
         </div>
       )}
 
-      {isAdmin && adminView === 'fabrics' ? (
-        <div className="max-w-7xl mx-auto px-4 py-8 w-full flex-1">
+      {isAdmin && adminView === 'estudio' ? (
+        <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8 w-full flex-1">
+          <StudioMode
+            models={sofaModels}
+            fabrics={fabrics}
+            userName={currentUser}
+            onGenerated={() => setSpendReloadToken((t) => t + 1)}
+          />
+        </div>
+      ) : isAdmin && adminView === 'models' ? (
+        <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8 w-full flex-1">
+          <SofaModelsAdmin onChanged={reloadModels} />
+        </div>
+      ) : isAdmin && adminView === 'fabrics' ? (
+        <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8 w-full flex-1">
           <FabricsAdmin onChanged={reloadFabrics} />
         </div>
       ) : (
-      <div className="max-w-7xl mx-auto px-4 py-8 w-full flex-1">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8 w-full flex-1">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
 
           {/* Columna Izquierda - Controles */}
           <div className="lg:col-span-4 space-y-6">
-            <div className="bg-white rounded-[2rem] p-7 border border-slate-100 shadow-xl shadow-slate-200/50">
-              <div className="flex bg-slate-50 p-1.5 rounded-2xl mb-8">
+            <div className="bg-white rounded-3xl sm:rounded-[2rem] p-5 sm:p-7 border border-slate-100 shadow-xl shadow-slate-200/50">
+              <div className="flex bg-slate-50 p-1 sm:p-1.5 rounded-2xl mb-6 sm:mb-8">
                 <button
                   onClick={() => { setMode(AppMode.INTEGRATE); setResults([]); }}
-                  className={`flex-1 py-3 text-xs font-extrabold rounded-xl transition-all duration-300 ${mode === AppMode.INTEGRATE ? 'bg-white shadow-md text-[#74AE2C]' : 'text-slate-400 hover:text-slate-600'}`}
+                  className={`flex-1 py-2.5 sm:py-3 px-1 text-[10px] sm:text-xs font-extrabold rounded-xl transition-all duration-300 ${mode === AppMode.INTEGRATE ? 'bg-white shadow-md text-[#74AE2C]' : 'text-slate-400 hover:text-slate-600'}`}
                 >
-                  INTEGRAR SOFÁ
+                  SOFÁ
                 </button>
                 <button
                   onClick={() => { setMode(AppMode.MATTRESS); setResults([]); }}
-                  className={`flex-1 py-3 text-xs font-extrabold rounded-xl transition-all duration-300 ${mode === AppMode.MATTRESS ? 'bg-white shadow-md text-[#74AE2C]' : 'text-slate-400 hover:text-slate-600'}`}
+                  className={`flex-1 py-2.5 sm:py-3 px-1 text-[10px] sm:text-xs font-extrabold rounded-xl transition-all duration-300 ${mode === AppMode.MATTRESS ? 'bg-white shadow-md text-[#74AE2C]' : 'text-slate-400 hover:text-slate-600'}`}
                 >
-                  INTEGRAR COLCHÓN
+                  COLCHÓN
                 </button>
                 <button
                   onClick={() => { setMode(AppMode.COLOR_CHANGE); setResults([]); }}
-                  className={`flex-1 py-3 text-xs font-extrabold rounded-xl transition-all duration-300 ${mode === AppMode.COLOR_CHANGE ? 'bg-white shadow-md text-[#74AE2C]' : 'text-slate-400 hover:text-slate-600'}`}
+                  className={`flex-1 py-2.5 sm:py-3 px-1 text-[10px] sm:text-xs font-extrabold rounded-xl transition-all duration-300 ${mode === AppMode.COLOR_CHANGE ? 'bg-white shadow-md text-[#74AE2C]' : 'text-slate-400 hover:text-slate-600'}`}
                 >
-                  CAMBIAR COLOR
+                  COLOR/TELA
                 </button>
               </div>
 
@@ -275,13 +300,13 @@ const App: React.FC = () => {
           {/* Columna Derecha - Resultados */}
           <div className="lg:col-span-8">
             {!isGenerating && results.length === 0 && (
-              <div className="h-full flex flex-col items-center justify-center min-h-[600px] border-2 border-dashed border-slate-100 rounded-[3rem] bg-white/50 p-12 text-center animate-in fade-in zoom-in-95 duration-700">
+              <div className="h-full flex flex-col items-center justify-center min-h-[400px] sm:min-h-[600px] border-2 border-dashed border-slate-100 rounded-[3rem] bg-white/50 p-12 text-center animate-in fade-in zoom-in-95 duration-700">
                 <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center mb-10 shadow-2xl shadow-[#74AE2C]/10 border border-[#74AE2C]/5">
                   <svg className="w-14 h-14 text-[#74AE2C]/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                   </svg>
                 </div>
-                <h3 className="text-3xl font-black text-slate-800 mb-4 tracking-tight uppercase">Tu hogar, a tu medida</h3>
+                <h3 className="text-2xl sm:text-3xl font-black text-slate-800 mb-4 tracking-tight uppercase">Tu hogar, a tu medida</h3>
                 <p className="text-slate-400 max-w-md leading-relaxed font-medium">
                   Usa nuestra Inteligencia Artificial para ver cómo quedaría cualquiera de nuestros {mode === AppMode.MATTRESS ? 'colchones' : 'sofás'} en el {mode === AppMode.MATTRESS ? 'dormitorio' : 'salón'} de tus sueños.
                 </p>
@@ -303,7 +328,7 @@ const App: React.FC = () => {
             )}
 
             {isGenerating && (
-              <div className="h-full flex flex-col items-center justify-center min-h-[600px] bg-white rounded-[3rem] border border-slate-50 shadow-2xl shadow-[#74AE2C]/5 p-12 text-center">
+              <div className="h-full flex flex-col items-center justify-center min-h-[400px] sm:min-h-[600px] bg-white rounded-[3rem] border border-slate-50 shadow-2xl shadow-[#74AE2C]/5 p-12 text-center">
                 <div className="space-y-10 max-w-sm">
                   <div className="relative mx-auto w-32 h-32">
                     <div className="absolute inset-0 border-8 border-[#74AE2C]/5 rounded-full"></div>
@@ -327,7 +352,7 @@ const App: React.FC = () => {
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-100 pb-8">
                   <div>
                     <span className="text-[#74AE2C] text-xs font-black uppercase tracking-[0.3em] block mb-2">Diseño Finalizado</span>
-                    <h3 className="text-4xl font-black text-slate-800 tracking-tighter uppercase">
+                    <h3 className="text-2xl sm:text-4xl font-black text-slate-800 tracking-tighter uppercase">
                       {mode === AppMode.INTEGRATE ? 'Nuestras Propuestas' : 'Nuevos Acabados'}
                     </h3>
                   </div>
@@ -338,7 +363,7 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-10">
                   {results.map((result, idx) => (
                     <ResultCard key={result.id} result={result} idx={idx} allowHiRes={currentUser === 'digency'} />
                   ))}

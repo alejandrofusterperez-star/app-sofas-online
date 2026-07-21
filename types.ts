@@ -63,6 +63,15 @@ export interface Fabric {
   colors: FabricColor[];
 }
 
+// Modelo de sofá (foto base) gestionado por el admin, usado en el Modo Estudio.
+export interface SofaModel {
+  id: string;
+  name: string;
+  image_path?: string | null;
+  image_url?: string | null;
+  created_at?: string;
+}
+
 export interface GenerationResult {
   id: string;
   url: string;

@@ -103,7 +103,7 @@ const FabricList: React.FC<{
   return (
     <div className="max-w-5xl mx-auto">
       <div className="mb-8">
-        <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tight">Biblioteca de Telas</h2>
+        <h2 className="text-2xl sm:text-3xl font-black text-slate-800 uppercase tracking-tight">Biblioteca de Telas</h2>
         <p className="text-slate-400 font-medium mt-2">
           Cada tela tiene su propia página. Ábrela para gestionar sus variaciones (con nombre e imagen de referencia).
         </p>
@@ -115,7 +115,7 @@ const FabricList: React.FC<{
           <div className="w-1.5 h-1.5 bg-[#74AE2C] rounded-full"></div>
           Nueva tela
         </label>
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <input
             type="text"
             value={newName}
@@ -267,7 +267,7 @@ const FabricDetail: React.FC<{
 
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tight">{fabric.name}</h2>
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-800 uppercase tracking-tight">{fabric.name}</h2>
           <p className="text-slate-400 font-medium mt-1">
             {fabric.colors.length} {fabric.colors.length === 1 ? 'variación' : 'variaciones'}
           </p>
