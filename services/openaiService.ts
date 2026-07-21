@@ -184,25 +184,22 @@ export const processSofaImage = async (
   } else {
     // Cambios independientes: el usuario puede pedir solo color, solo tela, o ambos.
     const changeFabric = !!config.changeFabric;
-    // ¿Hay una muestra (swatch) de la biblioteca de telas que se enviará como 2ª imagen?
+    // ¿Hay una muestra (swatch) de la biblioteca que se enviará como 2ª imagen?
+    // La usamos SOLO como referencia de TEXTURA/MATERIAL; el color lo pone la paleta.
     const hasFabricReference = changeFabric && !!config.fabricReferenceImageUrl;
-    // Si se eligió una tela nuestra, "olvidamos" el cambio de color manual:
-    // la variación ya define color + material mediante la imagen de referencia.
-    const changeColor = hasFabricReference ? false : config.changeColor !== false;
+    const changeColor = config.changeColor !== false; // por defecto true
 
     const fabricReferenceBlock = hasFabricReference
-      ? `IMAGEN DE REFERENCIA DE TELA (CRÍTICO, PRIORIDAD MÁXIMA):
-      - Se adjunta una SEGUNDA imagen: es una MUESTRA (swatch) de la tela "${config.targetFabric}" en color "${config.targetSofaColor}".
-      - Reproduce EXACTAMENTE esa tela sobre el tapizado del sofá: su trama, textura, relieve, brillo/mate y COLOR real de la muestra.
-      - La PRIMERA imagen es el SOFÁ a re-tapizar (respeta su forma, orientación y estructura).
-      - La SEGUNDA imagen es SOLO la tela de referencia: NO copies su forma ni su encuadre, únicamente el material y el color.
-      - FIDELIDAD ABSOLUTA DE COLOR Y TEXTURA: reproduce el color, el tono y la textura EXACTAMENTE 1:1 respecto a la muestra. NO lo aclares, NO lo oscurezcas, NO lo satures ni lo desatures. El tono debe coincidir con el de la muestra tal cual.
-      - El acabado final debe parecer que el sofá está tapizado físicamente con la tela de la muestra.`
+      ? `IMAGEN DE REFERENCIA DE TEXTURA (CRÍTICO, PRIORIDAD MÁXIMA):
+      - Se adjunta una SEGUNDA imagen: es una MUESTRA (swatch) de la tela "${config.targetFabric}".
+      - ÚSALA SOLO COMO REFERENCIA DE TEXTURA/MATERIAL: copia su trama, tejido, relieve, patrón y acabado (brillo/mate) exactamente.
+      - NO copies el COLOR de la muestra. El color del tapizado es el indicado arriba en el bloque COLOR ("${config.targetSofaColor}").
+      - Es decir: aplica la TEXTURA de la muestra pero TEÑIDA con el color elegido, como si esa misma tela existiera en ese color.
+      - La PRIMERA imagen es el SOFÁ a re-tapizar (respeta su forma, orientación y estructura). La SEGUNDA es solo la textura de referencia: NO copies su forma ni su encuadre.
+      - El acabado final debe parecer que el sofá está tapizado con ese material real, en el color indicado.`
       : '';
 
-    const colorBlock = hasFabricReference
-      ? '' // El color lo determina la tela de referencia (swatch); no damos instrucción de color.
-      : changeColor
+    const colorBlock = changeColor
       ? `COLOR (CAMBIAR):
       - Cambia el tinte del tapizado a: ${config.targetSofaColor || 'Azul Marino'}.
       - El tono debe ser uniforme, realista y premium.

@@ -88,7 +88,8 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
   );
 
 
-  // Selector de la biblioteca de telas (admin): elige tela → color con imagen de referencia.
+  // Selector de la biblioteca de telas (admin): la tela aporta SOLO la textura.
+  // El color se elige aparte en la paleta. La imagen se usa como referencia de material.
   const renderFabricLibrary = () => {
     if (!fabrics.length) {
       return (
@@ -98,6 +99,9 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
       );
     }
     const activeFabric = fabrics.find((f) => f.id === openFabricId) || null;
+    const selectedColor = fabrics
+      .flatMap((f) => f.colors)
+      .find((c) => c.id === config.selectedFabricColorId);
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-2">
@@ -124,7 +128,7 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
         {activeFabric && (
           <div className="pt-1">
             <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-3">
-              Colores de {activeFabric.name}
+              Variaciones de {activeFabric.name} (solo textura)
             </p>
             {activeFabric.colors.length === 0 ? (
               <p className="text-xs text-slate-400">Esta tela no tiene colores todavía.</p>
@@ -138,12 +142,10 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
                     onClick={() =>
                       onChange({
                         ...config,
-                        // Al elegir una tela nuestra "olvidamos" el cambio de color manual:
-                        // la variación ya define tela + color mediante la imagen de referencia.
+                        // La tela aporta SOLO la textura/material. El color lo pone la paleta,
+                        // así que NO tocamos targetSofaColor ni changeColor aquí.
                         changeFabric: true,
-                        changeColor: false,
                         targetFabric: activeFabric.name,
-                        targetSofaColor: color.name,
                         fabricReferenceImageUrl: color.image_url || undefined,
                         selectedFabricColorId: color.id,
                       })
@@ -184,7 +186,8 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
-            Tela de referencia seleccionada: {config.targetFabric} · {config.targetSofaColor}
+            Textura de referencia: {config.targetFabric}
+            {selectedColor ? ` · ${selectedColor.name}` : ''}
             <button
               onClick={() =>
                 onChange({
@@ -192,7 +195,6 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
                   fabricReferenceImageUrl: undefined,
                   selectedFabricColorId: undefined,
                   changeFabric: false,
-                  changeColor: true,
                 })
               }
               className="ml-auto text-slate-400 hover:text-red-500"
@@ -245,23 +247,49 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
   if (mode === AppMode.COLOR_CHANGE) {
     return (
       <div className="space-y-6 animate-in fade-in duration-300">
-        {/* Admin: la biblioteca de telas manda. Si eliges una tela nuestra,
-            se aplica esa tela exacta y se ocultan los ajustes manuales. */}
-        {isAdmin && (
-          <div>
-            {commonHeader('Tela de nuestra biblioteca')}
-            <p className="text-xs text-slate-400 mb-4 -mt-1">
-              Elige una tela nuestra y su variación: se aplicará esa tela exacta (con su color) usando la imagen de referencia.
-            </p>
-            {renderFabricLibrary()}
-          </div>
-        )}
-
-        {/* Ajustes manuales. Para admin se ocultan cuando ya hay una tela nuestra elegida. */}
-        {!(isAdmin && config.selectedFabricColorId) && (
-          <div className={isAdmin ? 'border-t border-slate-100 pt-6 space-y-6' : 'space-y-6'}>
+        {isAdmin ? (
+          <>
+            {/* Color: paleta de siempre. */}
             <div>
-              {commonHeader(isAdmin ? 'O cambia solo el color' : '¿Qué quieres cambiar?')}
+              {commonHeader('Color del tapizado')}
+              <div className="grid grid-cols-4 gap-4">
+                {sofaColors.map((color) => (
+                  <button
+                    key={color.name}
+                    title={color.name}
+                    onClick={() => onChange({ ...config, targetSofaColor: color.name, changeColor: true })}
+                    disabled={disabled}
+                    className="flex flex-col items-center gap-2 group outline-none"
+                  >
+                    <div
+                      className={`w-full aspect-square rounded-2xl border-2 transition-all duration-300 ${config.targetSofaColor === color.name
+                        ? 'border-[#74AE2C] ring-4 ring-[#74AE2C]/10 scale-105'
+                        : 'border-slate-100 group-hover:border-slate-300'
+                        }`}
+                      style={{ backgroundColor: color.value }}
+                    />
+                    <span className={`text-[10px] font-bold text-center leading-tight transition-colors ${config.targetSofaColor === color.name ? 'text-[#74AE2C]' : 'text-slate-400'
+                      }`}>
+                      {color.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Textura: tela de la biblioteca (solo material, el color lo pone la paleta). */}
+            <div className="border-t border-slate-100 pt-6">
+              {commonHeader('Textura de la tela (opcional)')}
+              <p className="text-xs text-slate-400 mb-4 -mt-1">
+                Elige una tela de la biblioteca para copiar SOLO su textura/material. El color será el que hayas elegido arriba.
+              </p>
+              {renderFabricLibrary()}
+            </div>
+          </>
+        ) : (
+          <>
+            <div>
+              {commonHeader('¿Qué quieres cambiar?')}
               <div className="space-y-3">
                 {toggleCard(
                   !!config.changeColor,
@@ -269,15 +297,14 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
                   'Cambiar el color',
                   'Aplica un nuevo tono al tapizado'
                 )}
-                {!isAdmin &&
-                  toggleCard(
-                    !!config.changeFabric,
-                    () => onChange({ ...config, changeFabric: !config.changeFabric }),
-                    'Cambiar la tela / material',
-                    'Cambia el tipo de tejido (terciopelo, lino, pana...)'
-                  )}
+                {toggleCard(
+                  !!config.changeFabric,
+                  () => onChange({ ...config, changeFabric: !config.changeFabric }),
+                  'Cambiar la tela / material',
+                  'Cambia el tipo de tejido (terciopelo, lino, pana...)'
+                )}
               </div>
-              {!isAdmin && !config.changeColor && !config.changeFabric && (
+              {!config.changeColor && !config.changeFabric && (
                 <p className="text-xs text-amber-600 mt-3 font-medium">
                   Selecciona al menos una opción para ver cambios.
                 </p>
@@ -313,7 +340,7 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
               </div>
             )}
 
-            {!isAdmin && config.changeFabric && (
+            {config.changeFabric && (
               <div className="border-t border-slate-100 pt-6">
                 {commonHeader('Elige la nueva tela')}
                 <div className="grid grid-cols-2 gap-2">
@@ -333,7 +360,7 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
                 </div>
               </div>
             )}
-          </div>
+          </>
         )}
 
         {renderImageCount()}
