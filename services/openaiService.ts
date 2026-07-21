@@ -196,6 +196,7 @@ export const processSofaImage = async (
       - Reproduce EXACTAMENTE esa tela sobre el tapizado del sofá: su trama, textura, relieve, brillo/mate y COLOR real de la muestra.
       - La PRIMERA imagen es el SOFÁ a re-tapizar (respeta su forma, orientación y estructura).
       - La SEGUNDA imagen es SOLO la tela de referencia: NO copies su forma ni su encuadre, únicamente el material y el color.
+      - AJUSTE DE TONO: aclara LIGERAMENTE el tono de la tela respecto a la muestra (un punto más luminoso, aprox. un 10-15%), SIN cambiar el color real ni el material. El objetivo es que se vea un poco más claro y vivo, nunca lavado ni desaturado.
       - El acabado final debe parecer que el sofá está tapizado físicamente con la tela de la muestra.`
       : '';
 
