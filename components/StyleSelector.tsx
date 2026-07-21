@@ -205,6 +205,31 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
     );
   };
 
+  // Selector del número de imágenes a generar (1, 2 o 3).
+  const renderImageCount = () => (
+    <div className="mt-6 border-t border-slate-100 pt-6">
+      {commonHeader('Número de imágenes')}
+      <div className="grid grid-cols-3 gap-3">
+        {[1, 2, 3].map((n) => {
+          const active = (config.numImages ?? 3) === n;
+          return (
+            <button
+              key={n}
+              onClick={() => onChange({ ...config, numImages: n })}
+              disabled={disabled}
+              className={`flex flex-col items-center justify-center gap-1 py-3 rounded-xl border-2 transition-all ${active
+                ? 'border-[#74AE2C] bg-[#74AE2C]/5 text-[#74AE2C]'
+                : 'border-slate-100 bg-white text-slate-400 hover:border-slate-200'}`}
+            >
+              <span className="text-lg font-black leading-none">{n}</span>
+              <span className="text-[10px] font-bold">{n === 1 ? 'imagen' : 'imágenes'}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   if (mode === AppMode.COLOR_CHANGE) {
     return (
       <div className="space-y-6 animate-in fade-in duration-300">
@@ -299,6 +324,7 @@ export const StyleSelector: React.FC<StyleSelectorProps> = ({ config, onChange, 
           </div>
         )}
 
+        {renderImageCount()}
         <div className="mt-6 border-t border-slate-100 pt-6">
           {commonHeader('Formato de imagen')}
           <div className="grid grid-cols-2 gap-3">

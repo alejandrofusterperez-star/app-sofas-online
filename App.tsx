@@ -30,7 +30,8 @@ const App: React.FC = () => {
     changeColor: true,
     changeFabric: false,
     targetFabric: 'Chenilla',
-    addDecor: true
+    addDecor: true,
+    numImages: 3
   });
   const [results, setResults] = useState<GenerationResult[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -76,19 +77,25 @@ const App: React.FC = () => {
     setResults([]);
 
     try {
-      const promises = [
-        processSofaImage(baseImage, mimeType, config, mode, currentUser),
-        processSofaImage(baseImage, mimeType, {
+      // Hasta 3 variantes; generamos solo las que pida el usuario (1, 2 o 3).
+      const variantConfigs = [
+        config,
+        {
           ...config,
           lighting: mode === AppMode.INTEGRATE ? Lighting.WARM : config.lighting,
           style: mode === AppMode.INTEGRATE ? InteriorStyle.SCANDINAVIAN : config.style
-        }, mode, currentUser),
-        processSofaImage(baseImage, mimeType, {
+        },
+        {
           ...config,
           wallColor: mode === AppMode.INTEGRATE ? 'Gris Suave' : config.wallColor,
           flooring: mode === AppMode.INTEGRATE ? 'Nogal Oscuro' : config.flooring
-        }, mode, currentUser),
+        },
       ];
+
+      const count = Math.min(3, Math.max(1, config.numImages ?? 3));
+      const promises = variantConfigs
+        .slice(0, count)
+        .map((c) => processSofaImage(baseImage, mimeType, c, mode, currentUser));
 
       const responses = await Promise.all(promises);
 

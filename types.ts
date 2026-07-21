@@ -33,6 +33,8 @@ export interface VisualizationConfig {
   addPillows?: boolean;
   addDecor?: boolean;
   aspectRatio?: string;
+  // Número de imágenes a generar (1, 2 o 3).
+  numImages?: number;
   // Solo para el usuario digency: permite cambiar el color del sofá dentro del modo INTEGRAR.
   integrateColorChange?: boolean;
   // Biblioteca de telas (admin): cuando se selecciona una tela+color de la biblioteca,
