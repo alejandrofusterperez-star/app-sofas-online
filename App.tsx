@@ -13,6 +13,7 @@ import { SpendCounter } from './components/SpendCounter';
 import { FabricsAdmin } from './components/FabricsAdmin';
 import { SofaModelsAdmin } from './components/SofaModelsAdmin';
 import { StudioMode } from './components/StudioMode';
+import { GalleryAdmin } from './components/GalleryAdmin';
 
 // Cambia esta clave cada vez que anuncies una novedad para volver a mostrar el modal.
 const WHATS_NEW_KEY = 'oksofas_whatsnew_telas_v1';
@@ -43,7 +44,7 @@ const App: React.FC = () => {
   const [spendReloadToken, setSpendReloadToken] = useState(0);
   const [fabrics, setFabrics] = useState<Fabric[]>([]);
   const [sofaModels, setSofaModels] = useState<SofaModel[]>([]);
-  const [adminView, setAdminView] = useState<'generator' | 'estudio' | 'fabrics' | 'models'>('generator');
+  const [adminView, setAdminView] = useState<'generator' | 'estudio' | 'fabrics' | 'models' | 'gallery'>('generator');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isAdmin = currentUser === 'digency';
@@ -171,6 +172,7 @@ const App: React.FC = () => {
               { key: 'estudio', label: 'Estudio' },
               { key: 'fabrics', label: 'Telas' },
               { key: 'models', label: 'Modelos' },
+              { key: 'gallery', label: 'Biblioteca' },
             ] as const).map((t) => (
               <button
                 key={t.key}
@@ -196,6 +198,10 @@ const App: React.FC = () => {
       ) : isAdmin && adminView === 'models' ? (
         <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8 w-full flex-1">
           <SofaModelsAdmin onChanged={reloadModels} />
+        </div>
+      ) : isAdmin && adminView === 'gallery' ? (
+        <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8 w-full flex-1">
+          <GalleryAdmin fabrics={fabrics} />
         </div>
       ) : isAdmin && adminView === 'fabrics' ? (
         <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8 w-full flex-1">

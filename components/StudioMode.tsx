@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { AppMode, Fabric, InteriorStyle, Lighting, SofaModel, VisualizationConfig, GenerationResult } from '../types';
+import { AppMode, Fabric, InteriorStyle, Lighting, SofaModel, VisualizationConfig, GenerationResult, GalleryMeta } from '../types';
 import { processSofaImage, Engine, OPENAI_IMAGE_MODELS, OpenAIModel } from '../services/openaiService';
 import { hasGeminiKey } from '../services/geminiService';
 import { urlToDataUrl } from '../services/sofaModelsService';
+import { saveGeneratedImage } from '../services/galleryService';
 import { ResultCard } from './ResultCard';
 
 interface StudioModeProps {
@@ -41,6 +42,19 @@ export const StudioMode: React.FC<StudioModeProps> = ({ models, fabrics, userNam
   const activeFabric = fabrics.find((f) => f.id === openFabricId) || null;
 
   const canContinue = step === 0 ? !!model : step === 1 ? !!texture : true;
+
+  const buildGalleryMeta = (): GalleryMeta => ({
+    fabric_id: texture?.c.fabric_id ?? null,
+    fabric_color_id: texture?.c.id ?? null,
+    fabric_name: texture?.fabricName ?? null,
+    variation_name: texture?.c.name ?? null,
+    color_hex: texture?.c.color_hex ?? null,
+    sofa_model_name: model?.name ?? null,
+    engine,
+    model: engine === 'gemini' ? 'gemini-2.5-flash-image' : openaiModel,
+    environment,
+    source: 'generated',
+  });
 
   const handleGenerate = async () => {
     if (!model?.image_url) {
@@ -175,7 +189,10 @@ export const StudioMode: React.FC<StudioModeProps> = ({ models, fabrics, userNam
           {/* Imágenes generadas */}
           <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
             {results.map((r, idx) => (
-              <ResultCard key={r.id} result={r} idx={idx} allowHiRes />
+              <div key={r.id} className="flex flex-col gap-3">
+                <ResultCard result={r} idx={idx} allowHiRes />
+                <SaveToLibrary dataUrl={r.url} meta={buildGalleryMeta()} />
+              </div>
             ))}
           </div>
         </div>
@@ -506,5 +523,56 @@ export const StudioMode: React.FC<StudioModeProps> = ({ models, fabrics, userNam
         )}
       </div>
     </div>
+  );
+};
+
+// Botón para guardar un resultado concreto en la biblioteca (solo si el usuario quiere).
+const SaveToLibrary: React.FC<{ dataUrl: string; meta: GalleryMeta }> = ({ dataUrl, meta }) => {
+  const [state, setState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+  const handleSave = async () => {
+    setState('saving');
+    try {
+      await saveGeneratedImage(dataUrl, meta);
+      setState('saved');
+    } catch (e) {
+      console.error(e);
+      setState('error');
+      setTimeout(() => setState('idle'), 2500);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleSave}
+      disabled={state === 'saving' || state === 'saved'}
+      className={`w-full py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+        state === 'saved'
+          ? 'bg-[#74AE2C]/10 text-[#74AE2C] cursor-default'
+          : state === 'error'
+          ? 'bg-red-50 text-red-500'
+          : 'bg-slate-900 text-white hover:bg-black'
+      }`}
+    >
+      {state === 'saved' ? (
+        <>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
+          Guardada en biblioteca
+        </>
+      ) : state === 'saving' ? (
+        'Guardando...'
+      ) : state === 'error' ? (
+        'Error al guardar'
+      ) : (
+        <>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h8l4 4v10a2 2 0 01-2 2H7a2 2 0 01-2-2V5z M9 3v4h6" />
+          </svg>
+          Guardar en biblioteca
+        </>
+      )}
+    </button>
   );
 };

@@ -72,6 +72,38 @@ export interface Fabric {
   colors: FabricColor[];
 }
 
+// Imagen guardada en la biblioteca, etiquetada por tela/variación.
+export interface GalleryImage {
+  id: string;
+  image_path?: string | null;
+  image_url?: string | null;
+  fabric_id?: string | null;
+  fabric_color_id?: string | null;
+  fabric_name?: string | null;
+  variation_name?: string | null;
+  color_hex?: string | null;
+  sofa_model_name?: string | null;
+  engine?: string | null;
+  model?: string | null;
+  environment?: string | null;
+  source?: string;
+  created_at?: string;
+}
+
+// Metadatos para guardar una imagen en la biblioteca.
+export interface GalleryMeta {
+  fabric_id?: string | null;
+  fabric_color_id?: string | null;
+  fabric_name?: string | null;
+  variation_name?: string | null;
+  color_hex?: string | null;
+  sofa_model_name?: string | null;
+  engine?: string | null;
+  model?: string | null;
+  environment?: string | null;
+  source?: string;
+}
+
 // Modelo de sofá (foto base) gestionado por el admin, usado en el Modo Estudio.
 export interface SofaModel {
   id: string;
