@@ -79,8 +79,31 @@ export const GalleryAdmin: React.FC<GalleryAdminProps> = ({ fabrics }) => {
     }
   };
 
+  // Telas que SÍ tienen imágenes en la biblioteca (con su recuento), para los filtros.
+  const availableFabrics = useMemo(() => {
+    const map = new Map<string, { key: string; name: string; count: number }>();
+    items.forEach((i) => {
+      const key = i.fabric_id || '__none__';
+      const name = i.fabric_name || 'Sin tela';
+      const cur = map.get(key) || { key, name, count: 0 };
+      cur.count += 1;
+      map.set(key, cur);
+    });
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  }, [items]);
+
+  // Si el filtro activo deja de existir (p.ej. borras la última imagen de esa tela), vuelve a "todas".
+  useEffect(() => {
+    if (filterFabric !== 'all' && !availableFabrics.some((f) => f.key === filterFabric)) {
+      setFilterFabric('all');
+    }
+  }, [availableFabrics, filterFabric]);
+
   const filtered = useMemo(
-    () => (filterFabric === 'all' ? items : items.filter((i) => i.fabric_id === filterFabric)),
+    () =>
+      filterFabric === 'all'
+        ? items
+        : items.filter((i) => (i.fabric_id || '__none__') === filterFabric),
     [items, filterFabric]
   );
 
@@ -145,21 +168,39 @@ export const GalleryAdmin: React.FC<GalleryAdminProps> = ({ fabrics }) => {
         <div className="mb-6 p-4 rounded-2xl bg-red-50 text-red-600 text-sm font-bold border border-red-100">{error}</div>
       )}
 
-      {/* Filtro */}
-      <div className="flex items-center gap-3 mb-6">
-        <span className="text-xs font-black uppercase tracking-widest text-slate-400">Filtrar por tela</span>
-        <select
-          value={filterFabric}
-          onChange={(e) => setFilterFabric(e.target.value)}
-          className="bg-white border-2 border-slate-100 rounded-xl px-4 py-2 outline-none focus:border-[#74AE2C] font-bold text-slate-700 text-sm"
-        >
-          <option value="all">Todas</option>
-          {fabrics.map((f) => (
-            <option key={f.id} value={f.id}>{f.name}</option>
-          ))}
-        </select>
-        <span className="text-xs font-bold text-slate-400">{filtered.length} imágenes</span>
-      </div>
+      {/* Filtros por tela (solo las que tienen imágenes) */}
+      {items.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] font-black uppercase tracking-widest text-slate-400 mr-1">Filtrar</span>
+            <button
+              onClick={() => setFilterFabric('all')}
+              className={`px-4 py-2 rounded-full text-xs font-black transition-all border-2 ${
+                filterFabric === 'all'
+                  ? 'bg-[#74AE2C] border-[#74AE2C] text-white shadow-md shadow-[#74AE2C]/20'
+                  : 'bg-white border-slate-100 text-slate-500 hover:border-[#74AE2C]/40'
+              }`}
+            >
+              Todas
+              <span className={`ml-1.5 ${filterFabric === 'all' ? 'text-white/70' : 'text-slate-300'}`}>{items.length}</span>
+            </button>
+            {availableFabrics.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setFilterFabric(f.key)}
+                className={`px-4 py-2 rounded-full text-xs font-black transition-all border-2 ${
+                  filterFabric === f.key
+                    ? 'bg-[#74AE2C] border-[#74AE2C] text-white shadow-md shadow-[#74AE2C]/20'
+                    : 'bg-white border-slate-100 text-slate-500 hover:border-[#74AE2C]/40'
+                }`}
+              >
+                {f.name}
+                <span className={`ml-1.5 ${filterFabric === f.key ? 'text-white/70' : 'text-slate-300'}`}>{f.count}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="text-center py-20 text-slate-400 font-bold">Cargando biblioteca...</div>

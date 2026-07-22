@@ -48,6 +48,25 @@ const App: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isAdmin = currentUser === 'digency';
+  // manolo: acceso limitado a Telas y Biblioteca.
+  const isManolo = currentUser === 'manolo';
+  const hasNav = isAdmin || isManolo;
+
+  // Pestañas visibles según el rol.
+  const navTabs = isAdmin
+    ? ([
+        { key: 'generator', label: 'Generador' },
+        { key: 'estudio', label: 'Estudio' },
+        { key: 'fabrics', label: 'Telas' },
+        { key: 'models', label: 'Modelos' },
+        { key: 'gallery', label: 'Biblioteca' },
+      ] as const)
+    : isManolo
+    ? ([
+        { key: 'fabrics', label: 'Telas' },
+        { key: 'gallery', label: 'Biblioteca' },
+      ] as const)
+    : ([] as const);
 
   const reloadFabrics = async () => {
     const data = await listFabrics();
@@ -59,14 +78,20 @@ const App: React.FC = () => {
     setSofaModels(data);
   };
 
-  // Carga las bibliotecas (telas + modelos) cuando entra el admin.
+  // Carga los datos necesarios según el rol.
   useEffect(() => {
-    if (isAuthenticated && isAdmin) {
+    if (isAuthenticated && (isAdmin || isManolo)) {
       reloadFabrics();
+    }
+    if (isAuthenticated && isAdmin) {
       reloadModels();
     }
+    // manolo arranca directamente en la biblioteca.
+    if (isAuthenticated && isManolo) {
+      setAdminView('gallery');
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isAdmin, isManolo]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -163,17 +188,11 @@ const App: React.FC = () => {
       {isAdmin && <SpendCounter reloadToken={spendReloadToken} />}
       {showWhatsNew && <WhatsNew onClose={closeWhatsNew} />}
 
-      {/* Navegación admin: generador, modo estudio y bibliotecas */}
-      {isAdmin && (
+      {/* Navegación por rol */}
+      {hasNav && (
         <div className="max-w-7xl mx-auto px-4 pt-6 w-full">
           <div className="flex gap-1 bg-white p-1.5 rounded-2xl border border-slate-100 shadow-sm overflow-x-auto">
-            {([
-              { key: 'generator', label: 'Generador' },
-              { key: 'estudio', label: 'Estudio' },
-              { key: 'fabrics', label: 'Telas' },
-              { key: 'models', label: 'Modelos' },
-              { key: 'gallery', label: 'Biblioteca' },
-            ] as const).map((t) => (
+            {navTabs.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setAdminView(t.key)}
@@ -199,13 +218,18 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8 w-full flex-1">
           <SofaModelsAdmin onChanged={reloadModels} />
         </div>
-      ) : isAdmin && adminView === 'gallery' ? (
+      ) : (isAdmin || isManolo) && adminView === 'gallery' ? (
         <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8 w-full flex-1">
           <GalleryAdmin fabrics={fabrics} />
         </div>
-      ) : isAdmin && adminView === 'fabrics' ? (
+      ) : (isAdmin || isManolo) && adminView === 'fabrics' ? (
         <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8 w-full flex-1">
           <FabricsAdmin onChanged={reloadFabrics} />
+        </div>
+      ) : isManolo ? (
+        // Salvaguarda: manolo nunca ve el generador.
+        <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8 w-full flex-1">
+          <GalleryAdmin fabrics={fabrics} />
         </div>
       ) : (
       <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8 w-full flex-1">
