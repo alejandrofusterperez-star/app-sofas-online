@@ -47,23 +47,23 @@ export const processSofaImage = async (
   // Referencia de tela (biblioteca). Se usa en re-tapizado e integración (Modo Estudio).
   const changeFabric = !!config.changeFabric;
   const hasFabricReference = changeFabric && !!config.fabricReferenceImageUrl;
-  // Modo Estudio: la muestra define COLOR + TEXTURA. Si no, solo textura (color = paleta).
+  // Modo Estudio: la muestra aporta SOLO la textura; el color lo define el HEX.
   const useFabricColor = hasFabricReference && !!config.useFabricColor;
 
-  // Si el admin ha fijado un HEX para esa variación, ese es el color EXACTO objetivo
-  // y la imagen se usa solo para la textura. Si no, el color se toma de la muestra.
+  // En Estudio la tela es SOLO textura. El color viene SIEMPRE del HEX; si no hay HEX,
+  // se conserva el color original del sofá (nunca se toma el color de la muestra).
   const colorHexLine = config.fabricColorHex
-    ? `- COLOR OBJETIVO EXACTO (PRIORIDAD MÁXIMA): el color real del tapizado es EXACTAMENTE el HEX ${config.fabricColorHex}. Aplícalo de forma uniforme, realista y premium a TODO el tapizado (variando SOLO por las luces y sombras naturales de la escena). USA LA SEGUNDA IMAGEN ÚNICAMENTE PARA LA TEXTURA/MATERIAL, NO PARA EL COLOR: si el color fotografiado de la muestra difiere del HEX, IGNÓRALO y usa ${config.fabricColorHex}.`
-    : `- COLOR: reproduce fielmente el color REAL de la muestra, incluyendo su luminosidad, saturación, subtonos y variaciones tonales naturales. NO lo reinterpretes, NO lo aclares, NO lo oscurezcas y NO lo desatures.`;
+    ? `- COLOR OBJETIVO EXACTO (PRIORIDAD MÁXIMA): el color del tapizado es EXACTAMENTE el HEX ${config.fabricColorHex}. Aplícalo de forma uniforme, realista y premium a TODO el tapizado (variando SOLO por las luces y sombras naturales de la escena). El color NUNCA se toma de la muestra de tela.`
+    : `- COLOR: mantén el color/tono ORIGINAL del tapizado del sofá; aplica solo la nueva textura. NO tomes el color de la muestra de tela.`;
 
   const fabricReferenceBlock = !hasFabricReference
     ? ''
     : useFabricColor
-    ? `REFERENCIA DE TELA (COLOR + TEXTURA) — EXCEPCIÓN PERMITIDA AL BLOQUEO DEL SOFÁ:
-      - Se adjuntan DOS imágenes: la PRIMERA es el SOFÁ (referencia estructural exacta) y la SEGUNDA es una MUESTRA (swatch) de la tela "${config.targetFabric}" (referencia EXCLUSIVA de tapizado).
-      - RE-TAPIZA el sofá cambiando ÚNICAMENTE el tapizado (material + color); no toques nada más del sofá.
+    ? `REFERENCIA DE TELA (SOLO TEXTURA; el color lo define el HEX) — EXCEPCIÓN PERMITIDA AL BLOQUEO DEL SOFÁ:
+      - Se adjuntan DOS imágenes: la PRIMERA es el SOFÁ (referencia estructural exacta) y la SEGUNDA es una MUESTRA (swatch) de la tela "${config.targetFabric}".
+      - La SEGUNDA imagen es SOLO REFERENCIA DE TEXTURA/MATERIAL. NO copies su COLOR bajo ningún concepto.
       ${colorHexLine}
-      - TEXTURA: reproduce la trama, fibras, grano, pelo, suavidad, densidad, irregularidades de superficie y el acabado mate o sutilmente reflectante de la muestra.
+      - TEXTURA: reproduce de la muestra la trama, fibras, grano, pelo, suavidad, densidad, irregularidades de superficie y el acabado mate o sutilmente reflectante.
       - ESCALA (MUY IMPORTANTE): la muestra puede ser una FOTO MACRO / primer plano. Ajusta AUTOMÁTICAMENTE la escala de la textura para que las fibras, la trama y el detalle se vean realistas en un sofá a tamaño real. NO reproduzcas la tela a escala macro y NO agrandes sus fibras ni su patrón.
       - APLICACIÓN: aplica la tela de forma natural a TODAS las superficies tapizadas (cojines de asiento y respaldo, brazos, base, chaise). La textura debe seguir la perspectiva, forma, curvatura y volumen de cada pieza, con tensión, pliegues, arrugas, costuras, sombras y brillos realistas y una dirección del pelo coherente con la luz.
       - Debe parecer FÍSICAMENTE tapizado, no una textura pegada digitalmente.
