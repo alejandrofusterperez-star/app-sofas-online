@@ -44,17 +44,22 @@ export const processSofaImage = async (
   const fabricReferenceBlock = !hasFabricReference
     ? ''
     : useFabricColor
-    ? `IMAGEN DE REFERENCIA DE TELA (COLOR + TEXTURA) — EXCEPCIÓN PERMITIDA AL BLOQUEO DEL SOFÁ:
+    ? `REFERENCIA DE TELA (COLOR + TEXTURA) — EXCEPCIÓN PERMITIDA AL BLOQUEO DEL SOFÁ:
+      - Se adjuntan DOS imágenes: la PRIMERA es el SOFÁ (referencia estructural exacta) y la SEGUNDA es una MUESTRA (swatch) de la tela "${config.targetFabric}" (referencia EXCLUSIVA de tapizado).
+      - RE-TAPIZA el sofá usando el color y el material EXACTOS de la muestra. Cambia ÚNICAMENTE el tapizado (material + color); no toques nada más del sofá.
+      - COLOR: reproduce fielmente el color REAL de la muestra, incluyendo su luminosidad, saturación, subtonos y variaciones tonales naturales. NO lo reinterpretes, NO lo aclares, NO lo oscurezcas y NO lo desatures.
+      - TEXTURA: reproduce la trama, fibras, grano, pelo, suavidad, densidad, irregularidades de superficie y el acabado mate o sutilmente reflectante de la muestra.
+      - ESCALA (MUY IMPORTANTE): la muestra puede ser una FOTO MACRO / primer plano. Ajusta AUTOMÁTICAMENTE la escala de la textura para que las fibras, la trama y el detalle se vean realistas en un sofá a tamaño real. NO reproduzcas la tela a escala macro y NO agrandes sus fibras ni su patrón.
+      - APLICACIÓN: aplica la tela de forma natural a TODAS las superficies tapizadas (cojines de asiento y respaldo, brazos, base, chaise). La textura debe seguir la perspectiva, forma, curvatura y volumen de cada pieza, con tensión, pliegues, arrugas, costuras, sombras y brillos realistas y una dirección del pelo coherente con la luz.
+      - Debe parecer FÍSICAMENTE tapizado, no una textura pegada digitalmente.
+      - EVITA: repetición/tiling visible, patrón duplicado, textura estirada o borrosa, reemplazo de color plano, relieve excesivo, fibras exageradas, contraste artificial, aspecto plástico, brillo irreal o apariencia CGI/ilustración.
+      - Conserva el ángulo de cámara, composición, perspectiva, iluminación, sombras, fondo y dimensiones del sofá original. La SEGUNDA imagen es SOLO material: NO copies su forma ni su encuadre.`
+    : `REFERENCIA DE TEXTURA (solo material) — EXCEPCIÓN PERMITIDA AL BLOQUEO DEL SOFÁ:
       - Se adjunta una SEGUNDA imagen: es una MUESTRA (swatch) de la tela "${config.targetFabric}".
-      - RE-TAPIZA el sofá con ESA tela: reproduce EXACTAMENTE 1:1 su COLOR, su tono, su trama, su textura, su relieve y su acabado (brillo/mate). NO inventes otro color.
-      - Es la ÚNICA modificación permitida al sofá: cambia SOLO el tapizado (material + color). Mantén 1:1 la forma, proporciones, costuras/relieve, cojines y patas.
-      - La PRIMERA imagen es el SOFÁ (respeta forma, orientación y estructura). La SEGUNDA es solo la tela de referencia: NO copies su forma ni su encuadre.
-      - El acabado final debe parecer que el sofá está tapizado físicamente con esa tela exacta.`
-    : `IMAGEN DE REFERENCIA DE TEXTURA (solo material) — EXCEPCIÓN PERMITIDA AL BLOQUEO DEL SOFÁ:
-      - Se adjunta una SEGUNDA imagen: es una MUESTRA (swatch) de la tela "${config.targetFabric}".
-      - ÚSALA SOLO COMO REFERENCIA DE TEXTURA/MATERIAL: copia su trama, tejido, relieve, patrón y acabado (brillo/mate) exactamente.
-      - NO copies el COLOR de la muestra. El color del tapizado es el indicado para el sofá ("${config.targetSofaColor}").
-      - Aplica la TEXTURA de la muestra pero TEÑIDA con ese color, como si esa misma tela existiera en ese color. Cambia SOLO el tapizado; mantén forma, patas y estructura 1:1.
+      - ÚSALA SOLO COMO REFERENCIA DE TEXTURA/MATERIAL: copia su trama, fibras, grano, relieve, patrón y acabado (mate/reflectante) exactamente.
+      - NO copies el COLOR de la muestra. El color del tapizado es el indicado para el sofá ("${config.targetSofaColor}"). Aplica la TEXTURA teñida con ese color, como si esa misma tela existiera en ese color.
+      - ESCALA (MUY IMPORTANTE): la muestra puede ser una FOTO MACRO. Ajusta la escala de la textura para que se vea realista en un sofá a tamaño real; NO agrandes las fibras ni el patrón, y evita repetición/tiling, textura estirada o aspecto plástico/CGI.
+      - La textura debe seguir la curvatura y el volumen de cada pieza con pliegues y sombras naturales; debe parecer físicamente tapizado. Cambia SOLO el tapizado; mantén forma, patas y estructura 1:1.
       - La PRIMERA imagen es el SOFÁ; la SEGUNDA es solo la textura de referencia: NO copies su forma ni su encuadre.`;
 
   // Solo para digency: cambio de color del sofá DENTRO del modo integrar (con paleta).
@@ -222,7 +227,11 @@ export const processSofaImage = async (
       : `COLOR (CONSERVAR):
       - MANTÉN EXACTAMENTE el color y el tono original del tapizado. NO lo alteres en absoluto.`;
 
-    const fabricBlock = changeFabric
+    // Si hay imagen de referencia de tela, el material lo dicta ESA imagen (bloque de
+    // referencia), así que NO añadimos el bloque genérico de tejido (evita confusión).
+    const fabricBlock = hasFabricReference
+      ? ''
+      : changeFabric
       ? `TELA / MATERIAL (CAMBIAR):
       - Cambia el tipo de tejido del tapizado a: ${config.targetFabric || 'Chenilla'}.
       - Reproduce de forma fotorrealista la trama, el brillo, el relieve y el comportamiento de la luz característicos de ese material (p. ej. el terciopelo refleja la luz, el lino es mate y texturizado, la pana tiene canalé, la piel/cuero es lisa y brillante).
