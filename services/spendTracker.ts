@@ -22,6 +22,9 @@ const FALLBACK_HIGH: Record<string, number> = {
   '1536x1024': 0.25,
 };
 
+// Gemini 2.5 Flash Image: coste aproximado por imagen de salida (~$0.039).
+const GEMINI_PER_IMAGE = 0.039;
+
 export interface OpenAIImageUsage {
   total_tokens?: number;
   input_tokens?: number;
@@ -57,12 +60,17 @@ export const EUR_PER_USD = 0.92;
 
 export const usdToEur = (usd: number) => (usd || 0) * EUR_PER_USD;
 
-/** Calcula el coste en USD de una llamada a gpt-image-1. */
+/** Calcula el coste en USD de una llamada de generación (gpt-image-1 o Gemini). */
 export const computeCostUsd = (
   usage: OpenAIImageUsage | null | undefined,
   size: string,
-  quality: string
+  quality: string,
+  model?: string
 ): number => {
+  // Gemini: coste por imagen (su usage no sigue el formato de OpenAI).
+  if (model && model.toLowerCase().includes('gemini')) {
+    return GEMINI_PER_IMAGE;
+  }
   if (usage) {
     const textTokens = usage.input_tokens_details?.text_tokens ?? 0;
     const imageInputTokens = usage.input_tokens_details?.image_tokens ?? 0;
@@ -87,7 +95,7 @@ export const computeCostUsd = (
 export const recordSpend = async (
   record: SpendRecord
 ): Promise<{ costUsd: number; totals: SpendTotals | null }> => {
-  const costUsd = computeCostUsd(record.usage, record.size, record.quality);
+  const costUsd = computeCostUsd(record.usage, record.size, record.quality, record.model);
 
   if (!supabase) {
     return { costUsd, totals: null };

@@ -1,22 +1,26 @@
 
 import { VisualizationConfig, AppMode } from "../types";
 import { recordSpend } from "./spendTracker";
+import { generateWithGemini } from "./geminiService";
 
 const OPENAI_IMAGE_EDIT_URL = "https://api.openai.com/v1/images/edits";
+
+export type Engine = 'openai' | 'gemini';
 
 export const processSofaImage = async (
   base64Image: string,
   mimeType: string,
   config: VisualizationConfig,
   mode: AppMode,
-  userName: string = 'desconocido'
+  userName: string = 'desconocido',
+  engine: Engine = 'openai'
 ): Promise<{ generatedUrl: string, processedInputUrl: string, costUsd: number } | null> => {
+  // La clave de OpenAI solo es obligatoria si el motor elegido es OpenAI.
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-  if (!apiKey) {
+  if (engine === 'openai' && !apiKey) {
     console.error("VITE_OPENAI_API_KEY no encontrada. Configúrala en .env.local (VITE_OPENAI_API_KEY=sk-...).");
     throw new Error("Falta la clave de OpenAI (VITE_OPENAI_API_KEY).");
   }
-  console.log("OpenAI API Key detectada (comienza por:", apiKey.substring(0, 6), "...)");
 
   let prompt = '';
 
@@ -287,6 +291,32 @@ export const processSofaImage = async (
       }
     }
 
+    // ── Motor Gemini ─────────────────────────────────────────────────────────
+    if (engine === 'gemini') {
+      const geminiModel = 'gemini-2.5-flash-image';
+      console.log(`Generando con Gemini: ${geminiModel} (proporción objetivo: ${size})`);
+      const images = [{ mimeType: 'image/png', data: dataUrlToBase64(processedBase64) }];
+      if (fabricRefBlob) {
+        images.push({ mimeType: fabricRefBlob.type || 'image/png', data: await blobToBase64(fabricRefBlob) });
+      }
+      const { b64: gb64 } = await generateWithGemini(prompt, images);
+      if (!gb64) return null;
+
+      let costUsd = 0;
+      try {
+        const { costUsd: c } = await recordSpend({ userName, model: geminiModel, size, quality: '-', usage: null });
+        costUsd = c;
+      } catch (e) {
+        console.warn('No se pudo registrar el gasto (Gemini):', e);
+      }
+      return {
+        generatedUrl: `data:image/png;base64,${gb64}`,
+        processedInputUrl: processedBase64,
+        costUsd,
+      };
+    }
+
+    // ── Motor OpenAI (gpt-image-1) ───────────────────────────────────────────
     const formData = new FormData();
     formData.append('model', modelName);
     if (fabricRefBlob) {
@@ -362,6 +392,21 @@ const aspectRatioToSize = (ratioStr?: string): string => {
   if (h > w) return '1024x1536'; // vertical
   return '1024x1024';
 };
+
+// Extrae el base64 (sin el prefijo "data:...;base64,") de un data URL.
+const dataUrlToBase64 = (dataUrl: string): string => {
+  const comma = dataUrl.indexOf(',');
+  return comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+};
+
+// Convierte un Blob a base64 (sin prefijo) para enviarlo a Gemini.
+const blobToBase64 = (blob: Blob): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(dataUrlToBase64(reader.result as string));
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 
 const dataUrlToBlob = async (dataUrl: string, fallbackMime: string): Promise<Blob> => {
   // Si ya es un data URL, fetch lo convierte directamente a Blob

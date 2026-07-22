@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { AppMode, Fabric, InteriorStyle, Lighting, SofaModel, VisualizationConfig, GenerationResult } from '../types';
-import { processSofaImage } from '../services/openaiService';
+import { processSofaImage, Engine } from '../services/openaiService';
+import { hasGeminiKey } from '../services/geminiService';
 import { urlToDataUrl } from '../services/sofaModelsService';
 import { ResultCard } from './ResultCard';
 
@@ -25,6 +26,8 @@ export const StudioMode: React.FC<StudioModeProps> = ({ models, fabrics, userNam
   const [aspectRatio, setAspectRatio] = useState<'1:1' | '3:4'>('1:1');
   const [numImages, setNumImages] = useState(3);
   const [fastMode, setFastMode] = useState(false);
+  const [engine, setEngine] = useState<Engine>('openai');
+  const geminiAvailable = hasGeminiKey();
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [results, setResults] = useState<GenerationResult[]>([]);
@@ -82,7 +85,7 @@ export const StudioMode: React.FC<StudioModeProps> = ({ models, fabrics, userNam
 
       const count = Math.min(3, Math.max(1, numImages));
       const responses = await Promise.all(
-        Array.from({ length: count }, (_, i) => processSofaImage(dataUrl, mimeType, configFor(i), mode, userName))
+        Array.from({ length: count }, (_, i) => processSofaImage(dataUrl, mimeType, configFor(i), mode, userName, engine))
       );
       onGenerated?.();
 
@@ -316,6 +319,37 @@ export const StudioMode: React.FC<StudioModeProps> = ({ models, fabrics, userNam
                 </label>
               </div>
             )}
+
+            {/* Motor de IA */}
+            <div className="border-t border-slate-100 pt-6">
+              <h4 className="text-sm font-black text-slate-800 mb-3">Motor de IA</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setEngine('openai')}
+                  className={`p-4 rounded-2xl border-2 text-left transition-all ${engine === 'openai' ? 'border-[#74AE2C] bg-[#74AE2C]/5' : 'border-slate-100 hover:border-slate-300'}`}
+                >
+                  <span className="block text-sm font-black text-slate-800">OpenAI · GPT Image</span>
+                  <span className="text-xs text-slate-400">gpt-image-1. Buena calidad general.</span>
+                </button>
+                <button
+                  onClick={() => geminiAvailable && setEngine('gemini')}
+                  disabled={!geminiAvailable}
+                  className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                    engine === 'gemini' ? 'border-[#74AE2C] bg-[#74AE2C]/5' : 'border-slate-100 hover:border-slate-300'
+                  } ${!geminiAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <span className="block text-sm font-black text-slate-800">Google · Gemini</span>
+                  <span className="text-xs text-slate-400">
+                    {geminiAvailable ? 'gemini-2.5-flash-image. Muy fiel al producto.' : 'Falta la API key de Gemini.'}
+                  </span>
+                </button>
+              </div>
+              {!geminiAvailable && (
+                <p className="text-[11px] text-amber-600 mt-2 font-medium">
+                  Para activar Gemini, añade tu clave <span className="font-bold">VITE_GEMINI_API_KEY</span> en el .env y vuelve a desplegar.
+                </p>
+              )}
+            </div>
 
             {/* Formato / cantidad / velocidad */}
             <div className="border-t border-slate-100 pt-6 grid grid-cols-1 sm:grid-cols-3 gap-5">
