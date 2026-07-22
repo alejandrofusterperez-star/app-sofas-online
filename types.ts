@@ -60,6 +60,8 @@ export interface FabricColor {
   image_url?: string | null;
   // HEX de referencia (lo pone el admin) para forzar el color exacto en el prompt.
   color_hex?: string | null;
+  // Marcado por el admin cuando esa tela+color genera resultados geniales.
+  verified?: boolean;
   created_at?: string;
 }
 

@@ -19,7 +19,7 @@ export const listFabrics = async (): Promise<Fabric[]> => {
 
   const { data: colors, error: cErr } = await supabase
     .from('fabric_colors')
-    .select('id, fabric_id, name, image_path, image_url, color_hex, created_at')
+    .select('id, fabric_id, name, image_path, image_url, color_hex, verified, created_at')
     .order('created_at', { ascending: true });
 
   if (cErr) {
@@ -105,7 +105,7 @@ export const addFabricColor = async (
       image_url: imageUrl,
       color_hex: normalizeHex(colorHex),
     })
-    .select('id, fabric_id, name, image_path, image_url, color_hex, created_at')
+    .select('id, fabric_id, name, image_path, image_url, color_hex, verified, created_at')
     .single();
   if (error) throw new Error(error.message);
 
@@ -128,6 +128,13 @@ export const updateFabricColorHex = async (id: string, colorHex: string | null):
     .from('fabric_colors')
     .update({ color_hex: normalizeHex(colorHex) })
     .eq('id', id);
+  if (error) throw new Error(error.message);
+};
+
+/** Marca/desmarca una variación como verificada (color+tela que funciona genial). */
+export const updateFabricColorVerified = async (id: string, verified: boolean): Promise<void> => {
+  if (!supabase) throw new Error('Supabase no configurado');
+  const { error } = await supabase.from('fabric_colors').update({ verified }).eq('id', id);
   if (error) throw new Error(error.message);
 };
 

@@ -295,11 +295,18 @@ export const StudioMode: React.FC<StudioModeProps> = ({ models, fabrics, userNam
                       {activeFabric.colors.map((c) => (
                         <button key={c.id} title={c.name} onClick={() => setTextureColorId(c.id)} className="flex flex-col items-center gap-1.5 group">
                           <div
-                            className={`w-full aspect-square rounded-2xl overflow-hidden border-2 bg-slate-50 transition-all ${
+                            className={`relative w-full aspect-square rounded-2xl overflow-hidden border-2 bg-slate-50 transition-all ${
                               textureColorId === c.id ? 'border-[#74AE2C] ring-4 ring-[#74AE2C]/10 scale-105' : 'border-slate-100 group-hover:border-slate-300'
                             }`}
                           >
                             {c.image_url && <img src={c.image_url} alt={c.name} className="w-full h-full object-cover" />}
+                            {c.verified && (
+                              <span className="absolute top-1 left-1 w-5 h-5 rounded-full bg-[#74AE2C] text-white flex items-center justify-center shadow-md" title="Verificado">
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </span>
+                            )}
                           </div>
                           <span className={`text-[10px] font-bold text-center leading-tight ${textureColorId === c.id ? 'text-[#74AE2C]' : 'text-slate-400'}`}>
                             {c.name}

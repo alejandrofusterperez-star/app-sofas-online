@@ -7,6 +7,7 @@ import {
   addFabricColor,
   deleteFabricColor,
   updateFabricColorHex,
+  updateFabricColorVerified,
   normalizeHex,
 } from '../services/fabricsService';
 
@@ -359,10 +360,13 @@ const FabricDetail: React.FC<{
           Esta tela aún no tiene variaciones. Añade la primera arriba.
         </div>
       ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
           {fabric.colors.map((color) => (
-            <div key={color.id} className="group relative">
-              <div className="aspect-square rounded-2xl overflow-hidden border-2 border-slate-100 bg-slate-50">
+            <div
+              key={color.id}
+              className={`group relative rounded-3xl p-2 border-2 transition-colors ${color.verified ? 'border-[#74AE2C] bg-[#74AE2C]/5' : 'border-transparent'}`}
+            >
+              <div className="aspect-square rounded-2xl overflow-hidden border-2 border-slate-100 bg-slate-50 relative">
                 {color.image_url ? (
                   <img src={color.image_url} alt={color.name} className="w-full h-full object-cover" />
                 ) : (
@@ -370,9 +374,38 @@ const FabricDetail: React.FC<{
                     sin imagen
                   </div>
                 )}
+                {color.verified && (
+                  <div className="absolute top-2 left-2 flex items-center gap-1 bg-[#74AE2C] text-white text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full shadow-md">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Verificado
+                  </div>
+                )}
               </div>
               <p className="text-[11px] font-bold text-slate-600 text-center mt-2 leading-tight">{color.name}</p>
               <VariationHex color={color} onChanged={onChanged} onError={setError} />
+
+              {/* Toggle verificado */}
+              <button
+                onClick={async () => {
+                  setError(null);
+                  try {
+                    await updateFabricColorVerified(color.id, !color.verified);
+                    await onChanged();
+                  } catch (e: any) {
+                    setError(e.message || 'No se pudo actualizar');
+                  }
+                }}
+                className={`w-full mt-2 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                  color.verified
+                    ? 'bg-[#74AE2C] text-white hover:bg-[#639626]'
+                    : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                }`}
+              >
+                {color.verified ? '✓ Verificado' : 'Marcar verificado'}
+              </button>
+
               <button
                 onClick={() => handleDeleteVariation(color)}
                 title="Eliminar variación"
@@ -413,7 +446,7 @@ const VariationHex: React.FC<{
   };
 
   return (
-    <div className="flex items-center gap-1.5 mt-1.5 justify-center">
+    <div className="flex items-center gap-2 mt-2 justify-center">
       <input
         type="color"
         value={normalizeHex(value) || '#cccccc'}
@@ -422,7 +455,7 @@ const VariationHex: React.FC<{
           save(e.target.value);
         }}
         title="Color de referencia"
-        className="w-6 h-6 flex-shrink-0 rounded-md border border-slate-200 bg-white cursor-pointer p-0"
+        className="w-11 h-11 flex-shrink-0 rounded-xl border-2 border-slate-200 bg-white cursor-pointer p-0.5"
       />
       <input
         type="text"
@@ -431,9 +464,9 @@ const VariationHex: React.FC<{
         onBlur={() => save(value)}
         onKeyDown={(e) => e.key === 'Enter' && save(value)}
         placeholder="#HEX"
-        className="w-16 bg-white border border-slate-200 rounded-lg px-1.5 py-1 outline-none focus:border-[#74AE2C] text-[10px] font-bold text-slate-600 uppercase text-center"
+        className="w-24 bg-white border-2 border-slate-200 rounded-xl px-2 py-2.5 outline-none focus:border-[#74AE2C] text-sm font-black text-slate-700 uppercase text-center tracking-wider"
       />
-      {savingHex && <span className="text-[9px] text-slate-300">…</span>}
+      {savingHex && <span className="text-xs text-slate-300">…</span>}
     </div>
   );
 };
