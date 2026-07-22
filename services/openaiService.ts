@@ -41,35 +41,12 @@ export const processSofaImage = async (
   // Modo Estudio: la muestra define COLOR + TEXTURA. Si no, solo textura (color = paleta).
   const useFabricColor = hasFabricReference && !!config.useFabricColor;
 
-  // Descargamos la muestra (para enviarla como 2ª imagen) y calculamos su COLOR MEDIO (HEX).
-  // Reproducir el tono a partir de una foto le cuesta al modelo; con el HEX objetivo explícito
-  // el color sale mucho más fiel.
-  let fabricRefBlob: Blob | null = null;
-  let fabricHex: string | null = null;
-  if (hasFabricReference && config.fabricReferenceImageUrl) {
-    try {
-      const refRes = await fetch(config.fabricReferenceImageUrl);
-      if (refRes.ok) {
-        fabricRefBlob = await refRes.blob();
-        fabricHex = await averageHexFromBlob(fabricRefBlob);
-      } else {
-        console.warn('No se pudo descargar la muestra de tela:', refRes.status);
-      }
-    } catch (e) {
-      console.warn('Error descargando la muestra de tela:', e);
-    }
-  }
-
-  const fabricColorLine = fabricHex
-    ? `\n      - COLOR OBJETIVO (PRIORITARIO): el tono medio real de la muestra es HEX ${fabricHex}. Usa EXACTAMENTE ese color como base del tapizado; solo puede variar por las luces y sombras naturales de la escena. Si se muestrease el tapizado en una zona de luz media, debe coincidir con ${fabricHex}.`
-    : '';
-
   const fabricReferenceBlock = !hasFabricReference
     ? ''
     : useFabricColor
     ? `REFERENCIA DE TELA (COLOR + TEXTURA) — EXCEPCIÓN PERMITIDA AL BLOQUEO DEL SOFÁ:
       - Se adjuntan DOS imágenes: la PRIMERA es el SOFÁ (referencia estructural exacta) y la SEGUNDA es una MUESTRA (swatch) de la tela "${config.targetFabric}" (referencia EXCLUSIVA de tapizado).
-      - RE-TAPIZA el sofá usando el color y el material EXACTOS de la muestra. Cambia ÚNICAMENTE el tapizado (material + color); no toques nada más del sofá.${fabricColorLine}
+      - RE-TAPIZA el sofá usando el color y el material EXACTOS de la muestra. Cambia ÚNICAMENTE el tapizado (material + color); no toques nada más del sofá.
       - COLOR: reproduce fielmente el color REAL de la muestra, incluyendo su luminosidad, saturación, subtonos y variaciones tonales naturales. NO lo reinterpretes, NO lo aclares, NO lo oscurezcas y NO lo desatures.
       - TEXTURA: reproduce la trama, fibras, grano, pelo, suavidad, densidad, irregularidades de superficie y el acabado mate o sutilmente reflectante de la muestra.
       - ESCALA (MUY IMPORTANTE): la muestra puede ser una FOTO MACRO / primer plano. Ajusta AUTOMÁTICAMENTE la escala de la textura para que las fibras, la trama y el detalle se vean realistas en un sofá a tamaño real. NO reproduzcas la tela a escala macro y NO agrandes sus fibras ni su patrón.
@@ -291,7 +268,18 @@ export const processSofaImage = async (
 
     // Convert the (possibly padded) data URL into a PNG Blob for the multipart upload
     const imageBlob = await dataUrlToBlob(processedBase64, mimeType);
-    // fabricRefBlob ya se descargó arriba (junto con el cálculo del color medio).
+
+    // Si hay una tela de referencia (biblioteca), la descargamos para enviarla como 2ª imagen.
+    let fabricRefBlob: Blob | null = null;
+    if (config.changeFabric && config.fabricReferenceImageUrl) {
+      try {
+        const refRes = await fetch(config.fabricReferenceImageUrl);
+        if (refRes.ok) fabricRefBlob = await refRes.blob();
+        else console.warn('No se pudo descargar la imagen de la tela de referencia:', refRes.status);
+      } catch (e) {
+        console.warn('Error descargando la tela de referencia:', e);
+      }
+    }
 
     const formData = new FormData();
     formData.append('model', modelName);
@@ -357,52 +345,6 @@ export const processSofaImage = async (
     if (error.message) console.error("Error Message:", error.message);
     throw error;
   }
-};
-
-// Calcula el color medio (HEX) de una imagen (muestra de tela). Usamos la zona central
-// (60%) para evitar bordes/fondo, y promediamos dibujándola en un lienzo de 1x1 px.
-const averageHexFromBlob = (blob: Blob): Promise<string | null> => {
-  return new Promise((resolve) => {
-    try {
-      const url = URL.createObjectURL(blob);
-      const img = new Image();
-      img.onload = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          canvas.width = 1;
-          canvas.height = 1;
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            URL.revokeObjectURL(url);
-            resolve(null);
-            return;
-          }
-          // Recorte central (60%) para evitar bordes/sombras/fondo de la foto.
-          const sw = img.width * 0.6;
-          const sh = img.height * 0.6;
-          const sx = img.width * 0.2;
-          const sy = img.height * 0.2;
-          ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 1, 1);
-          const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
-          URL.revokeObjectURL(url);
-          const hex =
-            '#' +
-            [r, g, b].map((x) => x.toString(16).padStart(2, '0')).join('').toUpperCase();
-          resolve(hex);
-        } catch (e) {
-          URL.revokeObjectURL(url);
-          resolve(null);
-        }
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(url);
-        resolve(null);
-      };
-      img.src = url;
-    } catch {
-      resolve(null);
-    }
-  });
 };
 
 // Mapea la relación de aspecto a uno de los tamaños soportados por gpt-image-1
