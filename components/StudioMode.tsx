@@ -146,9 +146,13 @@ export const StudioMode: React.FC<StudioModeProps> = ({ models, fabrics, userNam
                   <p className="text-sm font-black text-slate-800 leading-tight">{texture.fabricName}</p>
                   <p className="text-xs font-bold text-slate-500">{texture.c.name}</p>
                   {texture.c.color_hex && (
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="w-4 h-4 rounded-md border border-slate-200" style={{ backgroundColor: texture.c.color_hex }} />
-                      <span className="text-[11px] font-bold text-slate-500 uppercase">{texture.c.color_hex}</span>
+                    <div className="mt-3">
+                      <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5">Color</span>
+                      <div
+                        className="w-full aspect-square rounded-2xl border-2 border-slate-100 shadow-inner"
+                        style={{ backgroundColor: texture.c.color_hex }}
+                      />
+                      <span className="block text-center text-sm font-black text-slate-600 uppercase mt-2 tracking-wider">{texture.c.color_hex}</span>
                     </div>
                   )}
                 </>

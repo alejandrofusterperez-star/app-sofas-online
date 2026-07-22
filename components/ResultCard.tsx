@@ -11,6 +11,24 @@ interface ResultCardProps {
 export const ResultCard: React.FC<ResultCardProps> = ({ result, idx, allowHiRes = false }) => {
     const [showOriginal, setShowOriginal] = useState(false);
     const [isFullScreen, setIsFullScreen] = useState(false);
+    // Lupa: nivel de zoom y punto de origen (en %) para explorar detalles.
+    const [zoom, setZoom] = useState(1);
+    const [origin, setOrigin] = useState({ x: 50, y: 50 });
+
+    const openFullScreen = () => {
+        setZoom(1);
+        setOrigin({ x: 50, y: 50 });
+        setIsFullScreen(true);
+    };
+
+    const updateOrigin = (clientX: number, clientY: number, el: HTMLElement) => {
+        const rect = el.getBoundingClientRect();
+        const x = Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
+        const y = Math.min(100, Math.max(0, ((clientY - rect.top) / rect.height) * 100));
+        setOrigin({ x, y });
+    };
+
+    const cycleZoom = () => setZoom((z) => (z >= 4 ? 1 : z === 1 ? 2 : z + 1));
 
     // Descarga en alta resolución cuadrada (2400x2400). La imagen se ajusta
     // dentro del cuadrado preservando su proporción, con relleno blanco.
@@ -63,7 +81,7 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result, idx, allowHiRes 
                 className={`group relative rounded-[2.5rem] overflow-hidden border border-slate-100 shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:shadow-[#74AE2C]/10 bg-white ${idx === 0 ? 'md:col-span-2' : ''
                     }`}
             >
-                <div className="relative aspect-auto cursor-pointer" onClick={() => setIsFullScreen(true)}>
+                <div className="relative aspect-auto cursor-pointer" onClick={openFullScreen}>
                     <img
                         src={showOriginal ? result.originalUrl : result.url}
                         alt={`OK Sofás AI - ${idx + 1}`}
@@ -137,12 +155,12 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result, idx, allowHiRes 
                 {/* Botón Pantalla Completa */}
                 <div className="absolute top-6 right-6 z-30 opacity-0 group-hover:opacity-100 transition-all duration-300">
                     <button
-                        onClick={(e) => { e.stopPropagation(); setIsFullScreen(true); }}
+                        onClick={(e) => { e.stopPropagation(); openFullScreen(); }}
                         className="bg-white/90 backdrop-blur-md text-slate-800 p-2.5 rounded-full shadow-lg hover:bg-[#74AE2C] hover:text-white transition-all transform hover:scale-110"
-                        title="Ver pantalla completa"
+                        title="Ver con lupa / pantalla completa"
                     >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-4.35-4.35M11 8v6M8 11h6M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
                         </svg>
                     </button>
                 </div>
@@ -181,14 +199,53 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result, idx, allowHiRes 
                     </button>
 
                     <div
-                        className="relative w-full max-w-7xl max-h-[90vh] flex items-center justify-center"
+                        className="relative w-full max-w-7xl max-h-[90vh] flex items-center justify-center overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <img
                             src={result.url}
                             alt="Full Screen Result"
-                            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                            onClick={cycleZoom}
+                            onMouseMove={(e) => zoom > 1 && updateOrigin(e.clientX, e.clientY, e.currentTarget)}
+                            onTouchMove={(e) => {
+                                if (zoom > 1 && e.touches[0]) updateOrigin(e.touches[0].clientX, e.touches[0].clientY, e.currentTarget);
+                            }}
+                            style={{
+                                transform: `scale(${zoom})`,
+                                transformOrigin: `${origin.x}% ${origin.y}%`,
+                                transition: 'transform 0.15s ease-out',
+                                cursor: zoom > 1 ? 'zoom-out' : 'zoom-in',
+                            }}
+                            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl select-none"
+                            draggable={false}
                         />
+
+                        {/* Controles de lupa */}
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-full px-2 py-1.5 z-10" onClick={(e) => e.stopPropagation()}>
+                            <button
+                                onClick={() => setZoom((z) => Math.max(1, z - 1))}
+                                disabled={zoom <= 1}
+                                className="w-9 h-9 rounded-full text-white text-xl font-black hover:bg-white/15 disabled:opacity-30 transition-colors"
+                                title="Alejar"
+                            >
+                                −
+                            </button>
+                            <span className="text-white text-xs font-black tabular-nums w-10 text-center">{zoom}×</span>
+                            <button
+                                onClick={() => setZoom((z) => Math.min(4, z + 1))}
+                                disabled={zoom >= 4}
+                                className="w-9 h-9 rounded-full text-white text-xl font-black hover:bg-white/15 disabled:opacity-30 transition-colors"
+                                title="Acercar (lupa)"
+                            >
+                                +
+                            </button>
+                        </div>
+
+                        {zoom === 1 && (
+                            <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/70 text-[11px] font-bold uppercase tracking-widest bg-black/40 px-4 py-1.5 rounded-full pointer-events-none">
+                                Haz clic o usa + para la lupa · mueve para explorar
+                            </div>
+                        )}
 
                         {/* Botón cerrar flotante inferior para móvil */}
                         <button
