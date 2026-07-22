@@ -19,7 +19,7 @@ export const listFabrics = async (): Promise<Fabric[]> => {
 
   const { data: colors, error: cErr } = await supabase
     .from('fabric_colors')
-    .select('id, fabric_id, name, image_path, image_url, created_at')
+    .select('id, fabric_id, name, image_path, image_url, color_hex, created_at')
     .order('created_at', { ascending: true });
 
   if (cErr) {
@@ -71,11 +71,12 @@ const sanitize = (s: string) =>
     .replace(/^-+|-+$/g, '')
     .slice(0, 40) || 'x';
 
-/** Añade un color (con imagen) a una tela. Sube la imagen al Storage. */
+/** Añade un color (con imagen y HEX opcional) a una tela. Sube la imagen al Storage. */
 export const addFabricColor = async (
   fabricId: string,
   name: string,
-  file: File
+  file: File,
+  colorHex?: string
 ): Promise<FabricColor> => {
   if (!supabase) throw new Error('Supabase no configurado');
 
@@ -97,12 +98,37 @@ export const addFabricColor = async (
 
   const { data, error } = await supabase
     .from('fabric_colors')
-    .insert({ fabric_id: fabricId, name: name.trim(), image_path: path, image_url: imageUrl })
-    .select('id, fabric_id, name, image_path, image_url, created_at')
+    .insert({
+      fabric_id: fabricId,
+      name: name.trim(),
+      image_path: path,
+      image_url: imageUrl,
+      color_hex: normalizeHex(colorHex),
+    })
+    .select('id, fabric_id, name, image_path, image_url, color_hex, created_at')
     .single();
   if (error) throw new Error(error.message);
 
   return data as FabricColor;
+};
+
+/** Normaliza un HEX introducido a mano: admite "abc"/"#abc"/"aabbcc"; devuelve #RRGGBB o null. */
+export const normalizeHex = (value?: string | null): string | null => {
+  if (!value) return null;
+  let h = value.trim().replace(/^#/, '');
+  if (/^[0-9a-fA-F]{3}$/.test(h)) h = h.split('').map((c) => c + c).join('');
+  if (!/^[0-9a-fA-F]{6}$/.test(h)) return null;
+  return '#' + h.toUpperCase();
+};
+
+/** Actualiza el HEX de una variación de tela. */
+export const updateFabricColorHex = async (id: string, colorHex: string | null): Promise<void> => {
+  if (!supabase) throw new Error('Supabase no configurado');
+  const { error } = await supabase
+    .from('fabric_colors')
+    .update({ color_hex: normalizeHex(colorHex) })
+    .eq('id', id);
+  if (error) throw new Error(error.message);
 };
 
 /** Elimina un color de tela (fila + imagen del Storage). */

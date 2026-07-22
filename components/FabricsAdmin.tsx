@@ -6,6 +6,8 @@ import {
   deleteFabric,
   addFabricColor,
   deleteFabricColor,
+  updateFabricColorHex,
+  normalizeHex,
 } from '../services/fabricsService';
 
 interface FabricsAdminProps {
@@ -199,6 +201,7 @@ const FabricDetail: React.FC<{
   setError: (m: string | null) => void;
 }> = ({ fabric, onBack, onChanged, onDeleted, error, setError }) => {
   const [variationName, setVariationName] = useState('');
+  const [colorHex, setColorHex] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -218,8 +221,9 @@ const FabricDetail: React.FC<{
     setSaving(true);
     setError(null);
     try {
-      await addFabricColor(fabric.id, variationName, file);
+      await addFabricColor(fabric.id, variationName, file, colorHex);
       setVariationName('');
+      setColorHex('');
       pickFile(null);
       if (fileRef.current) fileRef.current.value = '';
       await onChanged();
@@ -316,9 +320,26 @@ const FabricDetail: React.FC<{
             value={variationName}
             onChange={(e) => setVariationName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-            placeholder="Nombre de la variación (ej. C1, C2, Verde Bosque...)"
+            placeholder="Nombre (ej. C1, Verde Bosque...)"
             className="flex-1 bg-white border-2 border-slate-100 rounded-2xl px-4 py-3 outline-none focus:border-[#74AE2C] transition-all font-bold text-slate-700 text-sm"
           />
+          {/* HEX de color (opcional): color exacto que usará el prompt */}
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={normalizeHex(colorHex) || '#cccccc'}
+              onChange={(e) => setColorHex(e.target.value)}
+              title="Elegir color"
+              className="w-11 h-11 flex-shrink-0 rounded-xl border-2 border-slate-100 bg-white cursor-pointer p-0.5"
+            />
+            <input
+              type="text"
+              value={colorHex}
+              onChange={(e) => setColorHex(e.target.value)}
+              placeholder="#HEX"
+              className="w-24 bg-white border-2 border-slate-100 rounded-2xl px-3 py-3 outline-none focus:border-[#74AE2C] transition-all font-bold text-slate-700 text-sm uppercase"
+            />
+          </div>
           <button
             onClick={handleAdd}
             disabled={saving || !variationName.trim() || !file}
@@ -327,6 +348,9 @@ const FabricDetail: React.FC<{
             {saving ? 'Subiendo...' : 'Añadir'}
           </button>
         </div>
+        <p className="text-[11px] text-slate-400 mt-2 pl-1">
+          El <span className="font-bold">HEX</span> es el color exacto que usará la IA para el tapizado. Déjalo vacío para que tome el color de la imagen.
+        </p>
       </div>
 
       {/* Variaciones existentes */}
@@ -348,6 +372,7 @@ const FabricDetail: React.FC<{
                 )}
               </div>
               <p className="text-[11px] font-bold text-slate-600 text-center mt-2 leading-tight">{color.name}</p>
+              <VariationHex color={color} onChanged={onChanged} onError={setError} />
               <button
                 onClick={() => handleDeleteVariation(color)}
                 title="Eliminar variación"
@@ -359,6 +384,56 @@ const FabricDetail: React.FC<{
           ))}
         </div>
       )}
+    </div>
+  );
+};
+
+// Editor del HEX de una variación (color-picker + campo de texto). Guarda al confirmar.
+const VariationHex: React.FC<{
+  color: FabricColor;
+  onChanged: () => Promise<void> | void;
+  onError: (m: string | null) => void;
+}> = ({ color, onChanged, onError }) => {
+  const [value, setValue] = useState(color.color_hex || '');
+  const [savingHex, setSavingHex] = useState(false);
+
+  const save = async (hex: string) => {
+    const normalized = normalizeHex(hex);
+    if ((color.color_hex || '') === (normalized || '')) return; // sin cambios
+    setSavingHex(true);
+    onError(null);
+    try {
+      await updateFabricColorHex(color.id, normalized);
+      await onChanged();
+    } catch (e: any) {
+      onError(e.message || 'No se pudo guardar el color');
+    } finally {
+      setSavingHex(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-1.5 mt-1.5 justify-center">
+      <input
+        type="color"
+        value={normalizeHex(value) || '#cccccc'}
+        onChange={(e) => {
+          setValue(e.target.value);
+          save(e.target.value);
+        }}
+        title="Color de referencia"
+        className="w-6 h-6 flex-shrink-0 rounded-md border border-slate-200 bg-white cursor-pointer p-0"
+      />
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={() => save(value)}
+        onKeyDown={(e) => e.key === 'Enter' && save(value)}
+        placeholder="#HEX"
+        className="w-16 bg-white border border-slate-200 rounded-lg px-1.5 py-1 outline-none focus:border-[#74AE2C] text-[10px] font-bold text-slate-600 uppercase text-center"
+      />
+      {savingHex && <span className="text-[9px] text-slate-300">…</span>}
     </div>
   );
 };

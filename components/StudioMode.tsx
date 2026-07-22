@@ -64,6 +64,7 @@ export const StudioMode: React.FC<StudioModeProps> = ({ models, fabrics, userNam
         fabricReferenceImageUrl: texture?.c.image_url || undefined,
         selectedFabricColorId: texture?.c.id,
         useFabricColor: true,
+        fabricColorHex: texture?.c.color_hex || undefined,
       };
 
       const mode = environment === 'salon' ? AppMode.INTEGRATE : AppMode.COLOR_CHANGE;

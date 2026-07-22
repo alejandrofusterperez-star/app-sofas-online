@@ -45,6 +45,8 @@ export interface VisualizationConfig {
   // Modo Estudio: si true, la muestra de tela define COLOR + TEXTURA (sin paleta).
   // Si false/undefined, la muestra aporta solo textura y el color viene de la paleta.
   useFabricColor?: boolean;
+  // HEX manual de la variación de tela: si está, es el color EXACTO objetivo del prompt.
+  fabricColorHex?: string;
   // Id del color de tela seleccionado de la biblioteca (para resaltar la selección en la UI).
   selectedFabricColorId?: string;
 }
@@ -56,6 +58,8 @@ export interface FabricColor {
   name: string;
   image_path?: string | null;
   image_url?: string | null;
+  // HEX de referencia (lo pone el admin) para forzar el color exacto en el prompt.
+  color_hex?: string | null;
   created_at?: string;
 }
 
