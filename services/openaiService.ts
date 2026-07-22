@@ -7,13 +7,18 @@ const OPENAI_IMAGE_EDIT_URL = "https://api.openai.com/v1/images/edits";
 
 export type Engine = 'openai' | 'gemini';
 
+// Modelos de imagen de OpenAI soportados por el selector.
+export const OPENAI_IMAGE_MODELS = ['gpt-image-1', 'gpt-image-1.5', 'gpt-image-2'] as const;
+export type OpenAIModel = (typeof OPENAI_IMAGE_MODELS)[number];
+
 export const processSofaImage = async (
   base64Image: string,
   mimeType: string,
   config: VisualizationConfig,
   mode: AppMode,
   userName: string = 'desconocido',
-  engine: Engine = 'openai'
+  engine: Engine = 'openai',
+  openaiModel: string = 'gpt-image-1'
 ): Promise<{ generatedUrl: string, processedInputUrl: string, costUsd: number } | null> => {
   // La clave de OpenAI solo es obligatoria si el motor elegido es OpenAI.
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
@@ -271,9 +276,11 @@ export const processSofaImage = async (
   }
 
   try {
-    const modelName = 'gpt-image-1';
+    const modelName = openaiModel || 'gpt-image-1';
     // Modo rápido -> calidad 'medium' (más rápido y barato). Por defecto 'high' (premium).
     const quality = config.fastMode ? 'medium' : 'high';
+    // gpt-image-2 (y sus fechados) NO soportan input_fidelity; el resto sí.
+    const supportsInputFidelity = !modelName.startsWith('gpt-image-2');
     console.log(`Llamando a OpenAI con modelo: ${modelName} (size: ${size}, quality: ${quality})`);
 
     // Convert the (possibly padded) data URL into a PNG Blob for the multipart upload
@@ -329,8 +336,8 @@ export const processSofaImage = async (
     formData.append('prompt', prompt);
     formData.append('size', size);
     formData.append('quality', quality);
-    // input_fidelity=high preserva al máximo el producto original (sofá/colchón/etiqueta)
-    formData.append('input_fidelity', 'high');
+    // input_fidelity=high preserva al máximo el producto original (solo si el modelo lo soporta).
+    if (supportsInputFidelity) formData.append('input_fidelity', 'high');
     formData.append('n', '1');
 
     const response = await fetch(OPENAI_IMAGE_EDIT_URL, {

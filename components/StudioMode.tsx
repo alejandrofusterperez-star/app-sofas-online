@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { AppMode, Fabric, InteriorStyle, Lighting, SofaModel, VisualizationConfig, GenerationResult } from '../types';
-import { processSofaImage, Engine } from '../services/openaiService';
+import { processSofaImage, Engine, OPENAI_IMAGE_MODELS, OpenAIModel } from '../services/openaiService';
 import { hasGeminiKey } from '../services/geminiService';
 import { urlToDataUrl } from '../services/sofaModelsService';
 import { ResultCard } from './ResultCard';
@@ -27,6 +27,7 @@ export const StudioMode: React.FC<StudioModeProps> = ({ models, fabrics, userNam
   const [numImages, setNumImages] = useState(3);
   const [fastMode, setFastMode] = useState(false);
   const [engine, setEngine] = useState<Engine>('openai');
+  const [openaiModel, setOpenaiModel] = useState<OpenAIModel>('gpt-image-1');
   const geminiAvailable = hasGeminiKey();
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -85,7 +86,7 @@ export const StudioMode: React.FC<StudioModeProps> = ({ models, fabrics, userNam
 
       const count = Math.min(3, Math.max(1, numImages));
       const responses = await Promise.all(
-        Array.from({ length: count }, (_, i) => processSofaImage(dataUrl, mimeType, configFor(i), mode, userName, engine))
+        Array.from({ length: count }, (_, i) => processSofaImage(dataUrl, mimeType, configFor(i), mode, userName, engine, openaiModel))
       );
       onGenerated?.();
 
@@ -95,9 +96,10 @@ export const StudioMode: React.FC<StudioModeProps> = ({ models, fabrics, userNam
 
       if (valid.length === 0) setError('No se pudo generar. Inténtalo de nuevo.');
       setResults(valid);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      setError('Ha ocurrido un error al generar. Inténtalo de nuevo.');
+      const msg = e?.message || (typeof e === 'string' ? e : JSON.stringify(e));
+      setError(`Error al generar (${engine}): ${msg}`);
     } finally {
       setIsGenerating(false);
     }
@@ -127,10 +129,51 @@ export const StudioMode: React.FC<StudioModeProps> = ({ models, fabrics, userNam
             Nueva composición
           </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-10">
-          {results.map((r, idx) => (
-            <ResultCard key={r.id} result={r} idx={idx} allowHiRes />
-          ))}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 sm:gap-8">
+          {/* Ficha lateral: tela usada como referencia */}
+          <aside className="lg:col-span-1">
+            <div className="bg-white rounded-3xl border border-slate-100 shadow-lg p-4 sm:sticky sm:top-24">
+              <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-3">Tela usada</h4>
+              {texture ? (
+                <>
+                  <div className="aspect-square rounded-2xl overflow-hidden border-2 border-slate-100 bg-slate-50 mb-3">
+                    {texture.c.image_url ? (
+                      <img src={texture.c.image_url} alt={texture.c.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-300 text-xs">sin imagen</div>
+                    )}
+                  </div>
+                  <p className="text-sm font-black text-slate-800 leading-tight">{texture.fabricName}</p>
+                  <p className="text-xs font-bold text-slate-500">{texture.c.name}</p>
+                  {texture.c.color_hex && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="w-4 h-4 rounded-md border border-slate-200" style={{ backgroundColor: texture.c.color_hex }} />
+                      <span className="text-[11px] font-bold text-slate-500 uppercase">{texture.c.color_hex}</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-xs text-slate-400">Sin tela de referencia.</p>
+              )}
+
+              <div className="border-t border-slate-100 mt-4 pt-3 space-y-1">
+                {model && <p className="text-[11px] text-slate-400"><span className="font-bold text-slate-500">Modelo:</span> {model.name}</p>}
+                <p className="text-[11px] text-slate-400">
+                  <span className="font-bold text-slate-500">Motor:</span> {engine === 'gemini' ? 'Gemini' : `OpenAI · ${openaiModel}`}
+                </p>
+                <p className="text-[11px] text-slate-400">
+                  <span className="font-bold text-slate-500">Escena:</span> {environment === 'salon' ? 'Salón' : 'Estudio'}
+                </p>
+              </div>
+            </div>
+          </aside>
+
+          {/* Imágenes generadas */}
+          <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+            {results.map((r, idx) => (
+              <ResultCard key={r.id} result={r} idx={idx} allowHiRes />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -348,6 +391,31 @@ export const StudioMode: React.FC<StudioModeProps> = ({ models, fabrics, userNam
                 <p className="text-[11px] text-amber-600 mt-2 font-medium">
                   Para activar Gemini, añade tu clave <span className="font-bold">VITE_GEMINI_API_KEY</span> en el .env y vuelve a desplegar.
                 </p>
+              )}
+
+              {/* Modelo concreto de OpenAI */}
+              {engine === 'openai' && (
+                <div className="mt-4">
+                  <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Modelo OpenAI</label>
+                  <div className="flex flex-wrap gap-2">
+                    {OPENAI_IMAGE_MODELS.map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => setOpenaiModel(m)}
+                        className={`px-3 py-2 text-xs font-bold rounded-xl border transition-all ${openaiModel === m ? 'bg-[#74AE2C] border-[#74AE2C] text-white' : 'bg-white border-slate-100 text-slate-500 hover:border-[#74AE2C]/30'}`}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-2">
+                    {openaiModel === 'gpt-image-2'
+                      ? 'El más nuevo. Gestiona la fidelidad internamente (sin input_fidelity).'
+                      : openaiModel === 'gpt-image-1.5'
+                      ? 'Más nuevo que gpt-image-1 y mantiene la máxima fidelidad al producto.'
+                      : 'Modelo base estable.'}
+                  </p>
+                </div>
               )}
             </div>
 
