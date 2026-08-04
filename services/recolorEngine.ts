@@ -12,6 +12,7 @@
 export interface RecolorParams {
   targetH: number;      // color objetivo (HSL) 0..1
   targetS: number;
+  targetL?: number;     // luminancia real de la tela: recentra el brillo para color fiel
   intensity: number;    // 0..1
   fabric: string;       // textura procedural de reserva: 'none' | 'lino' | ...
   fabricAmount: number; // 0..1
@@ -179,6 +180,32 @@ export const featherMask = (
   return out;
 };
 
+// Box blur separable sobre un Float32Array (para el high-pass de la textura).
+const boxBlurFloat = (src: Float32Array, width: number, height: number, radius: number): Float32Array => {
+  if (radius <= 0) return src.slice();
+  const tmp = new Float32Array(width * height);
+  const out = new Float32Array(width * height);
+  const win = radius * 2 + 1;
+  for (let y = 0; y < height; y++) {
+    const row = y * width;
+    let acc = 0;
+    for (let x = -radius; x <= radius; x++) acc += src[row + Math.max(0, Math.min(width - 1, x))];
+    for (let x = 0; x < width; x++) {
+      tmp[row + x] = acc / win;
+      acc += src[row + Math.min(width - 1, x + radius + 1)] - src[row + Math.max(0, x - radius)];
+    }
+  }
+  for (let x = 0; x < width; x++) {
+    let acc = 0;
+    for (let y = -radius; y <= radius; y++) acc += tmp[Math.max(0, Math.min(height - 1, y)) * width + x];
+    for (let y = 0; y < height; y++) {
+      out[y * width + x] = acc / win;
+      acc += tmp[Math.min(height - 1, y + radius + 1) * width + x] - tmp[Math.max(0, y - radius) * width + x];
+    }
+  }
+  return out;
+};
+
 // ─── Textura real de la tela (imagen de la base de datos) ────────────────────
 
 // Carga la imagen de textura (URL pública de Supabase) y la convierte en un mapa de
@@ -217,19 +244,18 @@ export const buildTextureLum = (
         cx.fillRect(0, 0, w, h);
 
         const d = cx.getImageData(0, 0, w, h).data;
-        const out = new Float32Array(w * h);
-        let mean = 0;
-        for (let p = 0; p < out.length; p++) {
+        const L = new Float32Array(w * h);
+        for (let p = 0; p < L.length; p++) {
           const i = p * 4;
-          const L = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255;
-          out[p] = L;
-          mean += L;
+          L[p] = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255;
         }
-        mean /= out.length;
-        // Guardamos la desviación respecto a la media con un realce de contraste,
-        // para que la trama del tejido se note más al imprimirla sobre el sofá.
-        const CONTRAST = 1.35;
-        for (let p = 0; p < out.length; p++) out[p] = (out[p] - mean) * CONTRAST;
+        // HIGH-PASS: restamos una versión desenfocada para eliminar la iluminación/vignette
+        // propia de la FOTO de la muestra (que al tilear creaba una rejilla/diagonal visible).
+        // Nos quedamos SOLO con la trama fina del tejido, que se reparte de forma uniforme.
+        const lowFreq = boxBlurFloat(L, w, h, 20);
+        const out = new Float32Array(w * h);
+        const CONTRAST = 2.0;
+        for (let p = 0; p < out.length; p++) out[p] = (L[p] - lowFreq[p]) * CONTRAST;
         resolve(out);
       } catch (e) {
         console.warn('No se pudo leer la textura (¿CORS?):', e);
@@ -315,21 +341,26 @@ export const applyRecolorMasked = (
     const y = (px - x) / width;
 
     // DESATURAR: nos quedamos solo con la luminancia perceptual del sofá, que lleva el
-    // relieve (pliegues, luces y sombras). Sobre ese "gris" aplicamos el color nuevo al
-    // 100%, así el tono sale FIEL en vez de mezclarse con el color original.
-    let L = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    // relieve (pliegues, luces y sombras).
+    const sofaL = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 
-    // Imprime la textura: real de la tela (BD) o, en su defecto, la procedural.
+    // Recentramos el brillo sobre el TONO REAL de la tela: así un rust oscuro sale rust
+    // (no salmón claro), conservando la variación de sombreado del sofá alrededor.
+    let L: number;
+    if (!p.keepColor && p.targetL !== undefined) {
+      const spread = 0.75;
+      L = p.targetL + (sofaL - 0.5) * spread;
+    } else {
+      L = 0.08 + sofaL * 0.84;
+    }
+
+    // Imprime la textura ENCIMA: real de la tela (BD) o, en su defecto, la procedural.
     if (p.texLum && p.texAmount) {
       L += p.texLum[px] * p.texAmount;
-      if (L < 0) L = 0; else if (L > 1) L = 1;
     } else if (applyFab) {
       L = applyFabric(L, x, y, p.fabric, p.fabricAmount);
     }
-
-    // Comprime ligeramente el rango para que el color se lea con fuerza (menos lavado
-    // en luces y sombras) sin perder el relieve.
-    L = 0.08 + L * 0.84;
+    if (L < 0) L = 0; else if (L > 1) L = 1;
 
     let nr: number, ng: number, nb: number;
     if (p.keepColor) {
@@ -337,7 +368,7 @@ export const applyRecolorMasked = (
       const [h, s] = rgbToHsl(r, g, b);
       [nr, ng, nb] = hslToRgb(h, s, L);
     } else {
-      // Color FIEL: tono y saturación 100% del objetivo, brillo tomado del sofá.
+      // Color FIEL: tono y saturación 100% del objetivo, brillo recentrado en la tela.
       [nr, ng, nb] = hslToRgb(p.targetH, p.targetS, L);
     }
 

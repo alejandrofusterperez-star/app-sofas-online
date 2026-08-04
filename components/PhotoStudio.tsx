@@ -64,11 +64,12 @@ export const PhotoStudio: React.FC<PhotoStudioProps> = ({ fabrics }) => {
     const buf = new ImageData(new Uint8ClampedArray(orig.data), w, h);
 
     if (feather) {
-      const [th, ts] = hexToHsl(activeHex);
+      const [th, ts, tl] = hexToHsl(activeHex);
       const useTex = applyTexture && texLumRef.current && texLumRef.current.length === w * h;
       applyRecolorMasked(buf.data, w, h, feather, {
         targetH: th,
         targetS: ts,
+        targetL: tl,
         intensity,
         fabric: 'none',
         fabricAmount: 0.7,
@@ -226,10 +227,10 @@ export const PhotoStudio: React.FC<PhotoStudioProps> = ({ fabrics }) => {
     if (!ctx) return;
     const buf = new ImageData(new Uint8ClampedArray(orig.data), w, h);
     if (feather) {
-      const [th, ts] = hexToHsl(activeHex);
+      const [th, ts, tl] = hexToHsl(activeHex);
       const useTex = applyTexture && texLumRef.current && texLumRef.current.length === w * h;
       applyRecolorMasked(buf.data, w, h, feather, {
-        targetH: th, targetS: ts, intensity, fabric: 'none', fabricAmount: 0.7,
+        targetH: th, targetS: ts, targetL: tl, intensity, fabric: 'none', fabricAmount: 0.7,
         keepColor: !applyColor, highlight: false,
         texLum: useTex ? texLumRef.current : null,
         texAmount: useTex ? texStrength : 0,
