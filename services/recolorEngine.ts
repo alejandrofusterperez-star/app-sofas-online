@@ -1,34 +1,30 @@
-// Motor de recoloreo + cambio de tela en tiempo real (100% client-side, sin API).
+// Motor de detección + recoloreo + cambio de tela sobre una FOTO FIJA (client-side, sin API).
 //
-// Idea:
-//  - MÁSCARA: un pixel pertenece al sofá si su "croma" (color normalizado por brillo)
-//    se parece al color de referencia que el usuario tocó. Al normalizar por brillo,
-//    las sombras y los brillos del MISMO tapizado siguen contando como sofá.
-//  - COLOR: sobre los pixeles de la máscara sustituimos el tono/saturación pero
-//    CONSERVAMOS la luminancia original (que es la que lleva pliegues, luces y sombras).
-//  - TELA: modulamos esa luminancia con una textura procedural (mate/brillo, canalé,
-//    grano, nudos...) para "insinuar" el material.
+// Flujo:
+//  1) DETECCIÓN: el usuario toca el sofá -> "flood fill" (crecimiento de región) que
+//     selecciona SOLO los píxeles CONECTADOS y de color parecido a donde tocó. Al ser
+//     una foto fija podemos recorrer toda la región con precisión (no como en vivo).
+//     Se pueden acumular varios toques para cubrir sombras/zonas separadas.
+//  2) SUAVIZADO: se difumina el borde de la máscara para que el recoloreo no quede recortado.
+//  3) RECOLOREO: sobre la máscara se cambia tono/saturación CONSERVANDO la luminancia
+//     original (pliegues, luces y sombras). La tela modula esa luminancia con textura.
 
 export interface RecolorParams {
-  // Cromaticidad de referencia (color del sofá que el usuario seleccionó)
-  refCr: number;
-  refCg: number;
-  // Radio de similitud de croma (sensibilidad de la máscara)
-  threshold: number;
-  // Color objetivo en HSL (0..1)
-  targetH: number;
+  targetH: number;      // color objetivo (HSL) 0..1
   targetS: number;
-  // Mezcla del recoloreo (0 = original, 1 = full)
-  intensity: number;
-  // Tela: 'none' | 'lino' | 'terciopelo' | 'pana' | 'boucle' | 'piel' | 'algodon'
-  fabric: string;
-  // Fuerza de la textura de tela (0..1)
-  fabricAmount: number;
-  // Si es true, no recolorea: solo aplica la textura de tela conservando el color real
-  keepColor?: boolean;
+  intensity: number;    // 0..1
+  fabric: string;       // textura procedural de reserva: 'none' | 'lino' | ...
+  fabricAmount: number; // 0..1
+  keepColor?: boolean;  // solo textura, conserva el color real del sofá
+  highlight?: boolean;  // pinta la máscara de verde (vista de selección)
+  // Textura REAL de la tela (de la base de datos): luminancia normalizada por píxel
+  // (valor ≈ texL - mediaTextura, rango aprox. -0.5..0.5) y su intensidad de imprimación.
+  texLum?: Float32Array | null;
+  texAmount?: number;
 }
 
-// Ruido hash determinista (sin almacenamiento), en [-1, 1]
+// ─── Utilidades de color ─────────────────────────────────────────────────────
+
 const hashNoise = (x: number, y: number): number => {
   const s = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
   return (s - Math.floor(s)) * 2 - 1;
@@ -83,50 +79,193 @@ export const hexToHsl = (hex: string): [number, number, number] => {
   return rgbToHsl(r, g, b);
 };
 
-// Cromaticidad (color normalizado por brillo) de un color RGB
-export const rgbToChroma = (r: number, g: number, b: number): [number, number] => {
-  const sum = r + g + b + 1e-6;
-  return [r / sum, g / sum];
+// ─── Detección por crecimiento de región (flood fill) ────────────────────────
+
+// Selecciona la región conectada al punto (seedX, seedY) cuyo color se parece al del
+// punto tocado. Acumula sobre `mask` (Uint8Array w*h; 255 = seleccionado).
+// `tolerance` en unidades de cromaticidad normalizada (aprox. 0.01–0.12).
+export const floodFillSelect = (
+  data: Uint8ClampedArray,
+  width: number,
+  height: number,
+  seedX: number,
+  seedY: number,
+  tolerance: number,
+  mask: Uint8Array
+): void => {
+  seedX = Math.max(0, Math.min(width - 1, Math.round(seedX)));
+  seedY = Math.max(0, Math.min(height - 1, Math.round(seedY)));
+
+  const seedIdx = seedY * width + seedX;
+  const si = seedIdx * 4;
+  const ssum = data[si] + data[si + 1] + data[si + 2] + 1e-6;
+  const seedCr = data[si] / ssum;
+  const seedCg = data[si + 1] / ssum;
+  // Luminancia de referencia para no saltar a zonas demasiado más oscuras/claras
+  const seedL = (data[si] + data[si + 1] + data[si + 2]) / 3;
+
+  const tol2 = tolerance * tolerance;
+  const lTol = 90; // margen de brillo permitido respecto a la semilla
+
+  // Stack de índices de píxel (no *4)
+  const stack: number[] = [seedIdx];
+  // Visitados: reutilizamos un Uint8Array aparte para no re-encolar
+  const visited = new Uint8Array(width * height);
+
+  while (stack.length) {
+    const p = stack.pop() as number;
+    if (visited[p]) continue;
+    visited[p] = 1;
+
+    const pi = p * 4;
+    const sum = data[pi] + data[pi + 1] + data[pi + 2] + 1e-6;
+    const cr = data[pi] / sum;
+    const cg = data[pi + 1] / sum;
+    const dcr = cr - seedCr;
+    const dcg = cg - seedCg;
+    if (dcr * dcr + dcg * dcg > tol2) continue;
+    if (Math.abs(sum / 3 - seedL) > lTol) continue;
+
+    mask[p] = 255;
+
+    const x = p % width;
+    const y = (p - x) / width;
+    if (x > 0) stack.push(p - 1);
+    if (x < width - 1) stack.push(p + 1);
+    if (y > 0) stack.push(p - width);
+    if (y < height - 1) stack.push(p + width);
+  }
 };
 
-// Modula la luminancia según la tela elegida. Devuelve L' en [0,1].
-const applyFabric = (
-  L: number,
-  x: number,
-  y: number,
-  fabric: string,
-  amt: number
-): number => {
+// Difumina la máscara (box blur separable) para bordes suaves. Devuelve Uint8Array alpha.
+export const featherMask = (
+  mask: Uint8Array,
+  width: number,
+  height: number,
+  radius: number
+): Uint8Array => {
+  if (radius <= 0) return mask.slice();
+  const tmp = new Float32Array(width * height);
+  const out = new Uint8Array(width * height);
+  const win = radius * 2 + 1;
+
+  // Horizontal
+  for (let y = 0; y < height; y++) {
+    let acc = 0;
+    const row = y * width;
+    for (let x = -radius; x <= radius; x++) {
+      acc += mask[row + Math.max(0, Math.min(width - 1, x))];
+    }
+    for (let x = 0; x < width; x++) {
+      tmp[row + x] = acc / win;
+      const add = row + Math.min(width - 1, x + radius + 1);
+      const sub = row + Math.max(0, x - radius);
+      acc += mask[add] - mask[sub];
+    }
+  }
+  // Vertical
+  for (let x = 0; x < width; x++) {
+    let acc = 0;
+    for (let y = -radius; y <= radius; y++) {
+      acc += tmp[Math.max(0, Math.min(height - 1, y)) * width + x];
+    }
+    for (let y = 0; y < height; y++) {
+      out[y * width + x] = acc / win;
+      const add = Math.min(height - 1, y + radius + 1) * width + x;
+      const sub = Math.max(0, y - radius) * width + x;
+      acc += tmp[add] - tmp[sub];
+    }
+  }
+  return out;
+};
+
+// ─── Textura real de la tela (imagen de la base de datos) ────────────────────
+
+// Carga la imagen de textura (URL pública de Supabase) y la convierte en un mapa de
+// luminancia NORMALIZADO (valor - media) del tamaño de la foto (w×h), tileando la
+// muestra. Ese mapa "imprime" la trama del tejido sobre el sofá conservando su sombreado.
+// Devuelve null si la imagen no carga o el navegador bloquea el acceso (CORS).
+export const buildTextureLum = (
+  imageUrl: string,
+  w: number,
+  h: number,
+  tilePx = 220
+): Promise<Float32Array | null> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const ar = img.naturalWidth / img.naturalHeight || 1;
+        const tw = tilePx;
+        const th = Math.max(1, Math.round(tilePx / ar));
+        const tile = document.createElement('canvas');
+        tile.width = tw;
+        tile.height = th;
+        const tctx = tile.getContext('2d');
+        if (!tctx) return resolve(null);
+        tctx.drawImage(img, 0, 0, tw, th);
+
+        const cv = document.createElement('canvas');
+        cv.width = w;
+        cv.height = h;
+        const cx = cv.getContext('2d', { willReadFrequently: true });
+        if (!cx) return resolve(null);
+        const pat = cx.createPattern(tile, 'repeat');
+        if (!pat) return resolve(null);
+        cx.fillStyle = pat;
+        cx.fillRect(0, 0, w, h);
+
+        const d = cx.getImageData(0, 0, w, h).data;
+        const out = new Float32Array(w * h);
+        let mean = 0;
+        for (let p = 0; p < out.length; p++) {
+          const i = p * 4;
+          const L = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255;
+          out[p] = L;
+          mean += L;
+        }
+        mean /= out.length;
+        for (let p = 0; p < out.length; p++) out[p] -= mean;
+        resolve(out);
+      } catch (e) {
+        console.warn('No se pudo leer la textura (¿CORS?):', e);
+        resolve(null);
+      }
+    };
+    img.onerror = () => resolve(null);
+    img.src = imageUrl;
+  });
+};
+
+// ─── Aplicación de tela ──────────────────────────────────────────────────────
+
+const applyFabric = (L: number, x: number, y: number, fabric: string, amt: number): number => {
   let out = L;
   switch (fabric) {
     case 'lino': {
-      // Mate + grano fino de trama
       const grain = hashNoise(x * 1.7, y * 1.7) * 0.06 * amt;
-      out = (L - 0.5) * (1 - 0.15 * amt) + 0.5 + grain; // comprime brillos (mate)
+      out = (L - 0.5) * (1 - 0.15 * amt) + 0.5 + grain;
       break;
     }
     case 'terciopelo': {
-      // Brillo direccional: más contraste + veladura suave
       const sheen = hashNoise(x * 0.4, y * 0.4) * 0.04 * amt;
       out = (L - 0.5) * (1 + 0.35 * amt) + 0.5 + sheen;
       break;
     }
     case 'pana': {
-      // Canalé: líneas verticales en relieve
       const rib = Math.sin(x * 1.6) * 0.09 * amt;
       out = L + rib;
       break;
     }
     case 'boucle': {
-      // Nudos: ruido grueso
-      const nub = (hashNoise(Math.floor(x / 2), Math.floor(y / 2))) * 0.10 * amt;
+      const nub = hashNoise(Math.floor(x / 2), Math.floor(y / 2)) * 0.10 * amt;
       out = L + nub;
       break;
     }
     case 'piel': {
-      // Cuero: liso + reflejos especulares marcados
       out = (L - 0.5) * (1 + 0.20 * amt) + 0.5;
-      if (L > 0.72) out += (L - 0.72) * 0.8 * amt; // realza el brillo especular
+      if (L > 0.72) out += (L - 0.72) * 0.8 * amt;
       break;
     }
     case 'algodon': {
@@ -140,50 +279,58 @@ const applyFabric = (
   return out < 0 ? 0 : out > 1 ? 1 : out;
 };
 
-// Procesa un ImageData IN-PLACE aplicando máscara + recoloreo + tela.
-export const processImageData = (
+// ─── Recoloreo con máscara explícita ─────────────────────────────────────────
+
+// Aplica recoloreo + tela IN-PLACE solo donde la máscara (alpha 0..255) es > 0.
+export const applyRecolorMasked = (
   data: Uint8ClampedArray,
   width: number,
   height: number,
+  mask: Uint8Array,
   p: RecolorParams
 ): void => {
-  const thrSq = p.threshold * p.threshold;
   const applyFab = p.fabric && p.fabric !== 'none';
 
-  for (let i = 0, px = 0; i < data.length; i += 4, px++) {
+  for (let px = 0; px < mask.length; px++) {
+    const a = mask[px];
+    if (a === 0) continue;
+    const alpha = (a / 255) * p.intensity;
+
+    const i = px * 4;
     const r = data[i], g = data[i + 1], b = data[i + 2];
-    const sum = r + g + b + 1e-6;
-    const cr = r / sum;
-    const cg = g / sum;
-    const dcr = cr - p.refCr;
-    const dcg = cg - p.refCg;
-    const dist = dcr * dcr + dcg * dcg;
 
-    if (dist > thrSq) continue; // no es sofá -> se deja tal cual
-
-    // Borde suave de la máscara (evita recortes duros)
-    const edge = 1 - dist / thrSq; // 1 en el centro, 0 en el borde
-    const soft = edge < 0.35 ? edge / 0.35 : 1;
-    const blend = p.intensity * soft;
+    if (p.highlight) {
+      // Vista de selección: mezcla hacia verde para ver qué está detectado
+      const hv = (a / 255) * 0.5;
+      data[i] = r + (116 - r) * hv;
+      data[i + 1] = g + (174 - g) * hv;
+      data[i + 2] = b + (44 - b) * hv;
+      continue;
+    }
 
     const x = px % width;
-    const y = (px / width) | 0;
+    const y = (px - x) / width;
 
     const [h, s, l] = rgbToHsl(r, g, b);
-    const newL = applyFab ? applyFabric(l, x, y, p.fabric, p.fabricAmount) : l;
+    // Prioridad: textura REAL de la tela (BD) > textura procedural > sin textura.
+    let newL = l;
+    if (p.texLum && p.texAmount) {
+      newL = l + p.texLum[px] * p.texAmount;
+      if (newL < 0) newL = 0; else if (newL > 1) newL = 1;
+    } else if (applyFab) {
+      newL = applyFabric(l, x, y, p.fabric, p.fabricAmount);
+    }
 
     let nr: number, ng: number, nb: number;
     if (p.keepColor) {
-      // Solo tela: conserva el color real, cambia la luminancia
       [nr, ng, nb] = hslToRgb(h, s, newL);
     } else {
-      // Recoloreo conservando la luminancia (con la modulación de tela)
-      const outS = s * 0.35 + p.targetS * 0.65; // acerca la saturación al objetivo
+      const outS = s * 0.35 + p.targetS * 0.65;
       [nr, ng, nb] = hslToRgb(p.targetH, outS, newL);
     }
 
-    data[i] = r + (nr - r) * blend;
-    data[i + 1] = g + (ng - g) * blend;
-    data[i + 2] = b + (nb - b) * blend;
+    data[i] = r + (nr - r) * alpha;
+    data[i + 1] = g + (ng - g) * alpha;
+    data[i + 2] = b + (nb - b) * alpha;
   }
 };

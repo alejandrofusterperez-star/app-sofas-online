@@ -14,7 +14,7 @@ import { FabricsAdmin } from './components/FabricsAdmin';
 import { SofaModelsAdmin } from './components/SofaModelsAdmin';
 import { StudioMode } from './components/StudioMode';
 import { GalleryAdmin } from './components/GalleryAdmin';
-import { LiveStudio } from './components/LiveStudio';
+import { PhotoStudio } from './components/PhotoStudio';
 
 // Cambia esta clave cada vez que anuncies una novedad para volver a mostrar el modal.
 const WHATS_NEW_KEY = 'oksofas_whatsnew_telas_v1';
@@ -58,7 +58,7 @@ const App: React.FC = () => {
     ? ([
         { key: 'generator', label: 'Generador' },
         { key: 'estudio', label: 'Estudio' },
-        { key: 'live', label: 'En Vivo' },
+        { key: 'live', label: 'Foto Sofá' },
         { key: 'fabrics', label: 'Telas' },
         { key: 'models', label: 'Modelos' },
         { key: 'gallery', label: 'Biblioteca' },
@@ -218,7 +218,7 @@ const App: React.FC = () => {
         </div>
       ) : isAdmin && adminView === 'live' ? (
         <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8 w-full flex-1">
-          <LiveStudio />
+          <PhotoStudio fabrics={fabrics} />
         </div>
       ) : isAdmin && adminView === 'models' ? (
         <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8 w-full flex-1">
