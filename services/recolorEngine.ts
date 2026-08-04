@@ -189,7 +189,7 @@ export const buildTextureLum = (
   imageUrl: string,
   w: number,
   h: number,
-  tilePx = 220
+  tilePx = 160
 ): Promise<Float32Array | null> => {
   return new Promise((resolve) => {
     const img = new Image();
@@ -226,7 +226,10 @@ export const buildTextureLum = (
           mean += L;
         }
         mean /= out.length;
-        for (let p = 0; p < out.length; p++) out[p] -= mean;
+        // Guardamos la desviación respecto a la media con un realce de contraste,
+        // para que la trama del tejido se note más al imprimirla sobre el sofá.
+        const CONTRAST = 1.35;
+        for (let p = 0; p < out.length; p++) out[p] = (out[p] - mean) * CONTRAST;
         resolve(out);
       } catch (e) {
         console.warn('No se pudo leer la textura (¿CORS?):', e);
@@ -311,22 +314,31 @@ export const applyRecolorMasked = (
     const x = px % width;
     const y = (px - x) / width;
 
-    const [h, s, l] = rgbToHsl(r, g, b);
-    // Prioridad: textura REAL de la tela (BD) > textura procedural > sin textura.
-    let newL = l;
+    // DESATURAR: nos quedamos solo con la luminancia perceptual del sofá, que lleva el
+    // relieve (pliegues, luces y sombras). Sobre ese "gris" aplicamos el color nuevo al
+    // 100%, así el tono sale FIEL en vez de mezclarse con el color original.
+    let L = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+    // Imprime la textura: real de la tela (BD) o, en su defecto, la procedural.
     if (p.texLum && p.texAmount) {
-      newL = l + p.texLum[px] * p.texAmount;
-      if (newL < 0) newL = 0; else if (newL > 1) newL = 1;
+      L += p.texLum[px] * p.texAmount;
+      if (L < 0) L = 0; else if (L > 1) L = 1;
     } else if (applyFab) {
-      newL = applyFabric(l, x, y, p.fabric, p.fabricAmount);
+      L = applyFabric(L, x, y, p.fabric, p.fabricAmount);
     }
+
+    // Comprime ligeramente el rango para que el color se lea con fuerza (menos lavado
+    // en luces y sombras) sin perder el relieve.
+    L = 0.08 + L * 0.84;
 
     let nr: number, ng: number, nb: number;
     if (p.keepColor) {
-      [nr, ng, nb] = hslToRgb(h, s, newL);
+      // Conserva el color real del sofá; solo cambia el relieve/textura.
+      const [h, s] = rgbToHsl(r, g, b);
+      [nr, ng, nb] = hslToRgb(h, s, L);
     } else {
-      const outS = s * 0.35 + p.targetS * 0.65;
-      [nr, ng, nb] = hslToRgb(p.targetH, outS, newL);
+      // Color FIEL: tono y saturación 100% del objetivo, brillo tomado del sofá.
+      [nr, ng, nb] = hslToRgb(p.targetH, p.targetS, L);
     }
 
     data[i] = r + (nr - r) * alpha;

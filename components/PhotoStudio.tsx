@@ -36,8 +36,9 @@ export const PhotoStudio: React.FC<PhotoStudioProps> = ({ fabrics }) => {
   const [applyColor, setApplyColor] = useState(true);   // aplicar el HEX de la tela
   const [applyTexture, setApplyTexture] = useState(true); // imprimir la textura real
   const [texVersion, setTexVersion] = useState(0);      // fuerza re-render cuando la textura llega
+  const [texStrength, setTexStrength] = useState(1.0);  // fuerza de imprimación de la textura
   const [tolerance, setTolerance] = useState(0.04);
-  const [intensity, setIntensity] = useState(0.9);
+  const [intensity, setIntensity] = useState(1.0);
   const [showMask, setShowMask] = useState(false);
   const [hasSelection, setHasSelection] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -74,11 +75,11 @@ export const PhotoStudio: React.FC<PhotoStudioProps> = ({ fabrics }) => {
         keepColor: !applyColor,
         highlight: showMask,
         texLum: useTex ? texLumRef.current : null,
-        texAmount: useTex ? 0.85 : 0,
+        texAmount: useTex ? texStrength : 0,
       });
     }
     ctx.putImageData(buf, 0, 0);
-  }, [activeHex, intensity, applyColor, applyTexture, showMask, texVersion]);
+  }, [activeHex, intensity, applyColor, applyTexture, showMask, texVersion, texStrength]);
 
   useEffect(() => {
     if (stage === 'editing') render();
@@ -231,7 +232,7 @@ export const PhotoStudio: React.FC<PhotoStudioProps> = ({ fabrics }) => {
         targetH: th, targetS: ts, intensity, fabric: 'none', fabricAmount: 0.7,
         keepColor: !applyColor, highlight: false,
         texLum: useTex ? texLumRef.current : null,
-        texAmount: useTex ? 0.85 : 0,
+        texAmount: useTex ? texStrength : 0,
       });
     }
     ctx.putImageData(buf, 0, 0);
@@ -457,12 +458,23 @@ export const PhotoStudio: React.FC<PhotoStudioProps> = ({ fabrics }) => {
 
             <div>
               <div className="flex justify-between mb-2">
-                <span className="text-xs font-black uppercase tracking-widest text-slate-400">Intensidad</span>
+                <span className="text-xs font-black uppercase tracking-widest text-slate-400">Intensidad color</span>
                 <span className="text-xs font-bold text-slate-400">{Math.round(intensity * 100)}%</span>
               </div>
               <input type="range" min={0.2} max={1} step={0.05} value={intensity}
                 onChange={(e) => setIntensity(parseFloat(e.target.value))} className="w-full accent-[#74AE2C]" />
             </div>
+
+            {applyTexture && selectedColor?.image_url && (
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-xs font-black uppercase tracking-widest text-slate-400">Fuerza textura</span>
+                  <span className="text-xs font-bold text-slate-400">{Math.round(texStrength * 100)}%</span>
+                </div>
+                <input type="range" min={0} max={2} step={0.05} value={texStrength}
+                  onChange={(e) => setTexStrength(parseFloat(e.target.value))} className="w-full accent-[#74AE2C]" />
+              </div>
+            )}
 
             <div className="bg-[#F8FAF5] rounded-2xl p-4 border border-[#74AE2C]/10">
               <p className="text-[11px] text-slate-500 leading-relaxed">
